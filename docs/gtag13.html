@@ -1,0 +1,225 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>Mini Gorilla Tag Single Player</title>
+
+  <!-- A-Frame -->
+  <script src="https://aframe.io/releases/1.4.0/aframe.min.js"></script>
+  <!-- Physics -->
+  <script src="https://cdn.jsdelivr.net/npm/aframe-physics-system@4.0.1/dist/aframe-physics-system.min.js"></script>
+
+  <style>
+    body { margin: 0; overflow: hidden; }
+    .it { outline: 3px solid red; }
+    #vrPrompt { 
+      position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
+      background: white; padding: 20px; font-family: sans-serif; border-radius: 10px;
+      text-align: center;
+    }
+    #vrPrompt button { margin: 10px; padding: 10px 20px; font-size: 16px; }
+    #tagMessage { position: absolute; top: 10%; width: 100%; text-align:center; font-family:sans-serif; font-size:24px; color:red; }
+  </style>
+</head>
+<body>
+
+<div id="vrPrompt">
+  <p>Do you want to play in VR mode?</p>
+  <button id="yesVR">Yes</button>
+  <button id="noVR">No</button>
+</div>
+
+<div id="tagMessage"></div>
+
+<a-scene physics="gravity: -9.8" vr-mode-ui="enabled: false">
+
+  <!-- Player Gorilla -->
+  <a-entity id="rig" position="0 2 0" dynamic-body="mass:5" class="player it">
+    <a-sphere id="head" radius="0.3" position="0 1.8 0" color="brown"></a-sphere>
+    <a-cylinder id="torso" radius="0.3" height="0.8" position="0 1.2 0" color="darkbrown"></a-cylinder>
+    <a-sphere id="leftHand" radius="0.15" color="brown" hand-controls="left" grab-move></a-sphere>
+    <a-sphere id="rightHand" radius="0.15" color="brown" hand-controls="right" grab-move></a-sphere>
+    <a-entity camera look-controls position="0 1.6 0"></a-entity>
+  </a-entity>
+
+  <!-- Ground -->
+  <a-plane static-body rotation="-90 0 0" width="50" height="50" color="#4CAF50"></a-plane>
+
+  <!-- Walls -->
+  <a-box class="wall" static-body position="0 2 -10" depth="1" height="4" width="20" color="gray"></a-box>
+  <a-box class="wall" static-body position="10 2 0" depth="20" height="4" width="1" color="gray"></a-box>
+  <a-box class="wall" static-body position="-10 2 0" depth="20" height="4" width="1" color="gray"></a-box>
+
+  <!-- Forest -->
+  <a-entity id="forest"></a-entity>
+
+</a-scene>
+
+<script>
+/* =======================
+   VR MODE PROMPT
+======================= */
+const vrPrompt = document.getElementById('vrPrompt');
+document.getElementById('yesVR').onclick = () => {
+  vrPrompt.style.display = 'none';
+  document.querySelector('a-scene').enterVR();
+};
+document.getElementById('noVR').onclick = () => { vrPrompt.style.display='none'; };
+
+/* =======================
+   FOREST + STUMP + ROCKS
+======================= */
+const forest = document.querySelector('#forest');
+for(let i=0;i<30;i++){
+  let x = (Math.random()-0.5)*40;
+  let z = (Math.random()-0.5)*40;
+
+  let trunk = document.createElement('a-cylinder');
+  trunk.setAttribute('position',`${x} 1 ${z}`);
+  trunk.setAttribute('radius','0.2');
+  trunk.setAttribute('height','2');
+  trunk.setAttribute('color','#8B4513');
+
+  let leaves = document.createElement('a-sphere');
+  leaves.setAttribute('position',`${x} 2.5 ${z}`);
+  leaves.setAttribute('radius','1');
+  leaves.setAttribute('color','green');
+
+  forest.appendChild(trunk);
+  forest.appendChild(leaves);
+
+  // Rocks
+  if(Math.random()<0.3){
+    let rock = document.createElement('a-sphere');
+    rock.setAttribute('position',`${x} 0.2 ${z+Math.random()*2-1}`);
+    rock.setAttribute('radius',`${Math.random()*0.3+0.2}`);
+    rock.setAttribute('color','gray');
+    forest.appendChild(rock);
+  }
+}
+
+// Add a stump in center
+let stump = document.createElement('a-cylinder');
+stump.setAttribute('position','0 0.25 0');
+stump.setAttribute('radius','0.5');
+stump.setAttribute('height','0.5');
+stump.setAttribute('color','#654321');
+forest.appendChild(stump);
+
+/* =======================
+   HAND-PUSH MOVEMENT
+======================= */
+AFRAME.registerComponent('grab-move',{
+  init:function(){ this.prevPos=this.el.object3D.position.clone(); this.rig=document.querySelector('#rig'); },
+  tick:function(){
+    const cur=this.el.object3D.position.clone();
+    const vel=cur.clone().sub(this.prevPos);
+    this.rig.object3D.position.x-=vel.x*2;
+    this.rig.object3D.position.z-=vel.z*2;
+    this.prevPos.copy(cur);
+  }
+});
+
+/* =======================
+   TAG COLLISION
+======================= */
+AFRAME.registerComponent('tag-collision',{
+  init:function(){
+    const msg=document.getElementById('tagMessage');
+    this.el.addEventListener('collide',e=>{
+      const other=e.detail.body.el;
+      if(!other) return;
+      if(this.el.classList.contains('it') && other.classList.contains('bot')){
+        this.el.classList.remove('it');
+        msg.innerText="You got tagged!";
+        setTimeout(()=>{ msg.innerText=''; },2000);
+        spawnGhost();
+      }
+    });
+  }
+});
+document.querySelectorAll('#rig,#head,#torso,#leftHand,#rightHand').forEach(el=>{ el.setAttribute('tag-collision',''); });
+
+/* =======================
+   AI BOT GORILLAS
+======================= */
+let bots=[];
+function createBot(id,x,z){
+  let bot=document.createElement('a-entity');
+  bot.setAttribute('id',id);
+  bot.classList.add('bot');
+
+  let head=document.createElement('a-sphere');
+  head.setAttribute('radius','0.3');
+  head.setAttribute('color','blue');
+  head.setAttribute('position','0 1.8 0');
+  bot.appendChild(head);
+
+  let torso=document.createElement('a-cylinder');
+  torso.setAttribute('radius','0.3');
+  torso.setAttribute('height','0.8');
+  torso.setAttribute('color','darkblue');
+  torso.setAttribute('position','0 1.2 0');
+  bot.appendChild(torso);
+
+  bot.object3D.position.set(x,1.2,z);
+  document.querySelector('a-scene').appendChild(bot);
+  bots.push(bot);
+}
+for(let i=0;i<3;i++){ createBot('bot'+i,(Math.random()-0.5)*20,(Math.random()-0.5)*20); }
+
+/* Bot movement */
+AFRAME.registerComponent('bot-move',{
+  tick:function(){
+    bots.forEach(bot=>{
+      let dir=Math.random()*2-1;
+      let dz=Math.random()*2-1;
+      bot.object3D.position.x+=dir*0.02;
+      bot.object3D.position.z+=dz*0.02;
+      if(bot.object3D.position.x>24) bot.object3D.position.x=-24;
+      if(bot.object3D.position.x<-24) bot.object3D.position.x=24;
+      if(bot.object3D.position.z>24) bot.object3D.position.z=-24;
+      if(bot.object3D.position.z<-24) bot.object3D.position.z=24;
+    });
+  }
+});
+document.querySelector('a-scene').setAttribute('bot-move','');
+
+/* =======================
+   MUSICAL GHOST
+======================= */
+function spawnGhost(){
+  let ghost=document.createElement('a-entity');
+  ghost.setAttribute('id','ghost');
+  ghost.setAttribute('position','0 2 -2');
+
+  let head=document.createElement('a-sphere');
+  head.setAttribute('radius','0.3');
+  head.setAttribute('color','white');
+  ghost.appendChild(head);
+
+  let torso=document.createElement('a-cylinder');
+  torso.setAttribute('radius','0.3');
+  torso.setAttribute('height','0.8');
+  torso.setAttribute('color','lightgray');
+  ghost.appendChild(torso);
+
+  // floating animation
+  ghost.setAttribute('animation','property: position; to:0 2.5 -2; dir:alternate; dur:1000; loop:true');
+
+  // add music
+  let sound=document.createElement('a-sound');
+  sound.setAttribute('src','https://cdn.pixabay.com/download/audio/2022/03/15/audio_2f0e0c4f42.mp3?filename=spooky-music-ambient-11294.mp3');
+  sound.setAttribute('autoplay','true');
+  sound.setAttribute('loop','true');
+  ghost.appendChild(sound);
+
+  document.querySelector('a-scene').appendChild(ghost);
+
+  // remove after 10 seconds
+  setTimeout(()=>{ ghost.remove(); },10000);
+}
+</script>
+
+</body>
+</html>
