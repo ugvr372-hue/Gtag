@@ -2,18 +2,17 @@
 <html>
 <head>
   <meta charset="utf-8">
-  <title>Mini Gorilla Tag VR Optimized</title>
+  <title>Mini Gorilla Tag VR Singleplayer</title>
   <script src="https://aframe.io/releases/1.4.0/aframe.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/aframe-physics-system@4.0.1/dist/aframe-physics-system.min.js"></script>
   <style>
-    body { margin: 0; overflow: hidden; }
+    body { margin:0; overflow:hidden; }
     #vrPrompt { 
-      position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
-      background: white; padding: 20px; font-family: sans-serif; border-radius: 10px;
-      text-align: center; z-index: 10;
+      position:absolute; top:50%; left:50%; transform:translate(-50%, -50%);
+      background:white; padding:20px; font-family:sans-serif; border-radius:10px; text-align:center; z-index:10;
     }
-    #vrPrompt button { margin: 10px; padding: 10px 20px; font-size: 16px; }
-    #tagMessage { position: absolute; top: 10%; width: 100%; text-align:center; font-family:sans-serif; font-size:24px; color:red; z-index: 9; }
+    #vrPrompt button { margin:10px; padding:10px 20px; font-size:16px; }
+    #tagMessage { position:absolute; top:10%; width:100%; text-align:center; font-family:sans-serif; font-size:24px; color:red; z-index:9; }
   </style>
 </head>
 <body>
@@ -64,20 +63,19 @@ window.onload = function(){
     rig.setAttribute('id','rig');
     rig.setAttribute('position','0 2 0');
     rig.setAttribute('dynamic-body','mass:5');
-    rig.classList.add('player','it');
     scene.appendChild(rig);
 
     // Head & Torso
     const head = document.createElement('a-sphere');
-    head.setAttribute('radius','0.3'); head.setAttribute('position','0 1.8 0'); head.setAttribute('color','brown');
+    head.setAttribute('radius','0.3'); head.setAttribute('position','0 1.8 0'); head.setAttribute('color','brown'); head.setAttribute('dynamic-body','');
     const torso = document.createElement('a-cylinder');
-    torso.setAttribute('radius','0.3'); torso.setAttribute('height','0.8'); torso.setAttribute('position','0 1.2 0'); torso.setAttribute('color','darkbrown');
+    torso.setAttribute('radius','0.3'); torso.setAttribute('height','0.8'); torso.setAttribute('position','0 1.2 0'); torso.setAttribute('color','darkbrown'); torso.setAttribute('dynamic-body','');
     rig.appendChild(head); rig.appendChild(torso);
 
     // Hands
     ['left','right'].forEach(hand=>{
       const h = document.createElement('a-sphere');
-      h.setAttribute('radius','0.15'); h.setAttribute('color','brown');
+      h.setAttribute('radius','0.15'); h.setAttribute('color','brown'); h.setAttribute('dynamic-body','mass:0.5');
       h.setAttribute('hand-controls',hand); h.setAttribute('grab-move','');
       rig.appendChild(h);
     });
@@ -86,7 +84,7 @@ window.onload = function(){
     const cam = document.createElement('a-entity'); cam.setAttribute('camera',''); cam.setAttribute('look-controls',''); cam.setAttribute('position','0 1.6 0');
     rig.appendChild(cam);
 
-    // --- Hand push movement ---
+    // --- Hand movement component ---
     AFRAME.registerComponent('grab-move',{
       init:function(){ this.prevPos=this.el.object3D.position.clone(); this.rig=rig; },
       tick:function(){
@@ -101,12 +99,12 @@ window.onload = function(){
     const forest = document.getElementById('forest');
     for(let i=0;i<20;i++){
       let x=(Math.random()-0.5)*40, z=(Math.random()-0.5)*40;
-      let trunk = document.createElement('a-cylinder'); trunk.setAttribute('position',`${x} 1 ${z}`); trunk.setAttribute('radius','0.2'); trunk.setAttribute('height','2'); trunk.setAttribute('color','#8B4513');
-      let leaves = document.createElement('a-sphere'); leaves.setAttribute('position',`${x} 2.5 ${z}`); leaves.setAttribute('radius','1'); leaves.setAttribute('color','green');
+      let trunk = document.createElement('a-cylinder'); trunk.setAttribute('position',`${x} 1 ${z}`); trunk.setAttribute('radius','0.2'); trunk.setAttribute('height','2'); trunk.setAttribute('color','#8B4513'); trunk.setAttribute('static-body','');
+      let leaves = document.createElement('a-sphere'); leaves.setAttribute('position',`${x} 2.5 ${z}`); leaves.setAttribute('radius','1'); leaves.setAttribute('color','green'); leaves.setAttribute('static-body','');
       forest.appendChild(trunk); forest.appendChild(leaves);
     }
     // Stump
-    const stump = document.createElement('a-cylinder'); stump.setAttribute('position','0 0.25 0'); stump.setAttribute('radius','0.5'); stump.setAttribute('height','0.5'); stump.setAttribute('color','#654321');
+    const stump = document.createElement('a-cylinder'); stump.setAttribute('position','0 0.25 0'); stump.setAttribute('radius','0.5'); stump.setAttribute('height','0.5'); stump.setAttribute('color','#654321'); stump.setAttribute('static-body','');
     forest.appendChild(stump);
 
     // --- AI Bots ---
@@ -116,26 +114,23 @@ window.onload = function(){
       let head=document.createElement('a-sphere'); head.setAttribute('radius','0.3'); head.setAttribute('color','blue'); head.setAttribute('position','0 1.8 0');
       let torso=document.createElement('a-cylinder'); torso.setAttribute('radius','0.3'); torso.setAttribute('height','0.8'); torso.setAttribute('color','darkblue'); torso.setAttribute('position','0 1.2 0');
       bot.appendChild(head); bot.appendChild(torso);
-      bot.object3D.position.set(x,1.2,z);
+      bot.object3D.position.set(x,1.2,z); bot.setAttribute('kinematic-body','');
       scene.appendChild(bot); bots.push(bot);
     }
     for(let i=0;i<3;i++){ createBot('bot'+i,(Math.random()-0.5)*20,(Math.random()-0.5)*20); }
 
+    // Bot movement
     AFRAME.registerComponent('bot-move',{
       tick:function(){
         bots.forEach(bot=>{
           let dx=(Math.random()-0.5)*0.05; let dz=(Math.random()-0.5)*0.05;
           bot.object3D.position.x+=dx; bot.object3D.position.z+=dz;
-          if(bot.object3D.position.x>24) bot.object3D.position.x=-24;
-          if(bot.object3D.position.x<-24) bot.object3D.position.x=24;
-          if(bot.object3D.position.z>24) bot.object3D.position.z=-24;
-          if(bot.object3D.position.z<-24) bot.object3D.position.z=24;
         });
       }
     });
     scene.setAttribute('bot-move','');
 
-    // --- Tag collision & musical ghost ---
+    // --- Tag ghost ---
     function spawnGhost(){
       let ghost=document.createElement('a-entity'); ghost.setAttribute('position','0 2 -2');
       let ghHead=document.createElement('a-sphere'); ghHead.setAttribute('radius','0.3'); ghHead.setAttribute('color','white'); ghost.appendChild(ghHead);
@@ -145,14 +140,13 @@ window.onload = function(){
       scene.appendChild(ghost); setTimeout(()=>{ ghost.remove(); },10000);
     }
 
-    // Detect simple tag: if you touch bot
+    // Tag detection
     AFRAME.registerComponent('tag-collision',{
       init:function(){
         this.el.addEventListener('collide', e=>{
           const other = e.detail.body?.el;
           if(!other) return;
-          if(this.el.classList.contains('it') && other.classList.contains('bot')){
-            this.el.classList.remove('it');
+          if(other.classList.contains('bot')){
             tagMsg.innerText="You got tagged!"; setTimeout(()=>{ tagMsg.innerText=''; },2000);
             spawnGhost();
           }
