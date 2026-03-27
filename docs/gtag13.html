@@ -1,105 +1,78 @@
 <!DOCTYPE html>
-<html lang="en">
-<head>
-<meta charset="UTF-8">
-<title>Huggy Sandbox VR Low RAM</title>
-<script src="https://aframe.io/releases/1.4.2/aframe.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/aframe-extras@6.1.1/dist/aframe-extras.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/aframe-physics-system@4.0.1/dist/aframe-physics-system.min.js"></script>
-<style>
-  #modMenu {
-    position: absolute;
-    top: 10%;
-    left: 10%;
-    width: 250px;
-    background: rgba(0,0,0,0.9);
-    color: #ff0;
-    font-family: monospace;
-    padding: 15px;
-    border: 2px solid #ff0;
-    z-index: 9999;
-  }
-  #modMenu button { display: block; margin: 5px 0; }
-</style>
-</head>
-<body>
+<html>
+  <head>
+    <title>Poppy Sandbox VR - Quest 3</title>
+    <script src="https://aframe.io/releases/1.4.2/aframe.min.js"></script>
+    <script src="https://unpkg.com/aframe-environment-component@1.3.2/dist/aframe-environment-component.min.js"></script>
+  </head>
+  <body>
+    <a-scene xr-mode-ui="enabled: true" webxr="referenceSpaceType: local-floor">
+      
+      <a-entity environment="preset: contact; groundColor: #444; grid: cross"></a-entity>
 
-<div id="modMenu">
-  <h3>MOD MENU</h3>
-  <button onclick="toggleHuggyCombat()">Toggle Huggy Combat</button>
-</div>
+      <a-entity id="rig">
+        <a-camera position="0 1.6 0"></a-camera>
+        <a-entity laser-controls="hand: left" raycaster="objects: .menu-button; far: 5"></a-entity>
+        <a-entity laser-controls="hand: right" raycaster="objects: .monster; far: 10" id="right-hand">
+            <a-box position="0 0 -0.2" scale="0.05 0.05 0.2" color="black"></a-box> </a-entity>
+      </a-entity>
 
-<a-scene physics="gravity:-9.8" vr-mode-ui="enabled:true" background="color:#222">
+      <a-entity id="menu" position="0 1.5 -1" rotation="-20 0 0">
+        <a-plane color="#222" height="0.6" width="1" opacity="0.8"></a-plane>
+        
+        <a-text value="SPAWN MENU" align="center" position="0 0.22 0.01" scale="0.3 0.3 0.3"></a-text>
+        
+        <a-plane class="menu-button" color="blue" height="0.1" width="0.4" position="0 0.05 0.02" 
+                 onclick="spawnMonster('blue', 'Huggy')">
+            <a-text value="Huggy" align="center" scale="0.2 0.2 0.2"></a-text>
+        </a-plane>
 
-  <!-- Lights -->
-  <a-entity light="type: ambient; intensity: 0.5"></a-entity>
-  <a-entity light="type: directional; intensity:0.7; castShadow:true" position="5 10 5"></a-entity>
+        <a-plane class="menu-button" color="purple" height="0.1" width="0.4" position="0 -0.1 0.02" 
+                 onclick="spawnMonster('purple', 'Catnap')">
+            <a-text value="Catnap" align="center" scale="0.2 0.2 0.2"></a-text>
+        </a-plane>
+      </a-entity>
 
-  <!-- Player rig -->
-  <a-entity id="rig" position="0 1.6 5" movement-controls="speed:0.15" physics-body="shape:capsule; mass:80">
-    <a-camera wasd-controls look-controls></a-camera>
-    <a-entity hand-controls="hand: left" physics-body></a-entity>
-    <a-entity hand-controls="hand: right" physics-body></a-entity>
-  </a-entity>
+      <a-entity id="monster-container"></a-entity>
 
-  <!-- Floor and walls -->
-  <a-box position="0 -2 0" depth="20" height="0.2" width="20" color="#444" static-body></a-box>
-  <a-box position="0 0 -10" depth="0.2" height="4" width="20" color="#888" static-body></a-box>
-  <a-box position="0 0 10" depth="0.2" height="4" width="20" color="#888" static-body></a-box>
-  <a-box position="-10 0 0" depth="20" height="4" width="0.2" color="#888" static-body></a-box>
-  <a-box position="10 0 0" depth="20" height="4" width="0.2" color="#888" static-body></a-box>
+    </a-scene>
 
-  <!-- Huggy Wuggy character (low-poly glTF) -->
-  <a-entity id="huggy" gltf-model="https://cdn.jsdelivr.net/gh/PookiePieVR/huggy_lowpoly.glb" position="0 0 -5" scale="0.5 0.5 0.5" dynamic-body></a-entity>
-
-  <!-- GrabPack objects (limited) -->
-  <a-box class="sandboxObj" position="1 0 -1" depth="0.5" height="0.5" width="0.5" color="#f00" dynamic-body></a-box>
-  <a-box class="sandboxObj" position="-1 0 -2" depth="0.5" height="0.5" width="0.5" color="#0f0" dynamic-body></a-box>
-  <a-sphere class="sandboxObj" position="2 0 -3" radius="0.25" color="#ff0" dynamic-body></a-sphere>
-
-  <script>
-    let huggyCombat = false;
-    const huggy = document.getElementById('huggy');
-
-    function toggleHuggyCombat(){
-      huggyCombat = !huggyCombat;
-      alert("Huggy Combat: " + (huggyCombat ? "ON" : "OFF"));
-    }
-
-    // Optimized Huggy AI
-    AFRAME.registerComponent('huggy-ai', {
-      tick: function(){
-        if(huggyCombat){
-          const rigPos = document.getElementById('rig').getAttribute('position');
-          const huggyPos = huggy.getAttribute('position');
-          huggy.setAttribute('position',{
-            x: huggyPos.x + (rigPos.x - huggyPos.x) * 0.004,
-            y: huggyPos.y,
-            z: huggyPos.z + (rigPos.z - huggyPos.z) * 0.004
-          });
+    <script>
+      // Logic to spawn monsters in VR space
+      function spawnMonster(color, name) {
+        const container = document.querySelector('#monster-container');
+        const newMonster = document.createElement('a-entity');
+        
+        // Random position in front of player
+        const x = (Math.random() - 0.5) * 4;
+        const z = -3 - (Math.random() * 2);
+        
+        newMonster.setAttribute('position', `${x} 0 ${z}`);
+        newMonster.setAttribute('class', 'monster');
+        
+        // Build the monster out of shapes (No PNGs/Downloads)
+        if (name === 'Huggy') {
+            newMonster.innerHTML = `
+                <a-box color="${color}" position="0 1 0" scale="0.6 2 0.4"></a-box> <a-sphere color="${color}" position="0 2.2 0" scale="0.4 0.4 0.4"></a-sphere> `;
+        } else {
+            newMonster.innerHTML = `
+                <a-sphere color="${color}" position="0 0.5 0" scale="0.8 0.8 0.8"></a-sphere> <a-sphere color="${color}" position="0 1.2 0" scale="0.5 0.5 0.5"></a-sphere> `;
         }
-      }
-    });
-    huggy.setAttribute('huggy-ai','');
 
-    // GrabPack mechanic
-    const hands = document.querySelectorAll('[hand-controls]');
-    hands.forEach(hand=>{
-      hand.addEventListener('gripdown', ()=>{
-        const objs = document.querySelectorAll('.sandboxObj');
-        objs.forEach(obj=>{
-          const handPos = hand.object3D.position;
-          const objPos = obj.object3D.position;
-          const dist = handPos.distanceTo(objPos);
-          if(dist < 1){
-            obj.setAttribute('position',{x:handPos.x, y:handPos.y, z:handPos.z});
-          }
+        // Click monster with Right Controller to "kill" it
+        newMonster.addEventListener('click', function () {
+            this.setAttribute('animation', 'property: scale; to: 0 0 0; dur: 200');
+            setTimeout(() => this.remove(), 200);
         });
+
+        container.appendChild(newMonster);
+      }
+
+      // Handle Right Trigger for "Shooting"
+      document.querySelector('#right-hand').addEventListener('triggerdown', function () {
+          // A-Frame laser-controls handles the 'click' event automatically via raycaster
+          console.log("Trigger Pressed");
       });
-    });
-  </script>
-
-</a-scene>
-
-</body>
+    </script>
+  </body>
 </html>
