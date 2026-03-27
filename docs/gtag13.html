@@ -1,78 +1,104 @@
 <!DOCTYPE html>
 <html>
   <head>
-    <title>Poppy Sandbox VR - Quest 3</title>
+    <title>Quest 3 Poppy Sandbox</title>
     <script src="https://aframe.io/releases/1.4.2/aframe.min.js"></script>
     <script src="https://unpkg.com/aframe-environment-component@1.3.2/dist/aframe-environment-component.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/gh/donmccurdy/aframe-extras@v6.1.1/dist/aframe-extras.min.js"></script>
   </head>
   <body>
-    <a-scene xr-mode-ui="enabled: true" webxr="referenceSpaceType: local-floor">
+    <a-scene xr-mode-ui="enabled: true">
       
-      <a-entity environment="preset: contact; groundColor: #444; grid: cross"></a-entity>
+      <a-assets>
+        <audio id="spawn-snd" src="https://cdn.pixabay.com/audio/2022/03/10/audio_c8c8a73420.mp3" preload="auto"></audio>
+        <audio id="chase-snd" src="https://cdn.pixabay.com/audio/2022/03/15/audio_1896328631.mp3" preload="auto"></audio>
+      </a-assets>
 
-      <a-entity id="rig">
-        <a-camera position="0 1.6 0"></a-camera>
-        <a-entity laser-controls="hand: left" raycaster="objects: .menu-button; far: 5"></a-entity>
-        <a-entity laser-controls="hand: right" raycaster="objects: .monster; far: 10" id="right-hand">
-            <a-box position="0 0 -0.2" scale="0.05 0.05 0.2" color="black"></a-box> </a-entity>
+      <a-entity environment="preset: threetowers; lighting: point; shadow: true; groundTexture: walky"></a-entity>
+
+      <a-entity id="rig" movement-controls="fly: false; speed: 0.2">
+        <a-camera position="0 1.6 0" look-controls></a-camera>
+        
+        <a-entity oculus-touch-controls="hand: left" laser-controls="hand: left" raycaster="objects: .menu-btn; far: 5">
+            <a-mesh gltf-model="url(https://vazxmixjsiawhamurptx.supabase.co/storage/v1/object/public/models/hand-left/model.gltf)" 
+                    rotation="0 0 0" scale="1.5 1.5 1.5" material="color: blue"></a-mesh>
+        </a-entity>
+
+        <a-entity id="right-hand" oculus-touch-controls="hand: right" laser-controls="hand: right" raycaster="objects: .monster; far: 20">
+            <a-mesh gltf-model="url(https://vazxmixjsiawhamurptx.supabase.co/storage/v1/object/public/models/hand-right/model.gltf)" 
+                    rotation="0 0 0" scale="1.5 1.5 1.5" material="color: red"></a-mesh>
+        </a-entity>
       </a-entity>
 
-      <a-entity id="menu" position="0 1.5 -1" rotation="-20 0 0">
-        <a-plane color="#222" height="0.6" width="1" opacity="0.8"></a-plane>
-        
-        <a-text value="SPAWN MENU" align="center" position="0 0.22 0.01" scale="0.3 0.3 0.3"></a-text>
-        
-        <a-plane class="menu-button" color="blue" height="0.1" width="0.4" position="0 0.05 0.02" 
-                 onclick="spawnMonster('blue', 'Huggy')">
-            <a-text value="Huggy" align="center" scale="0.2 0.2 0.2"></a-text>
-        </a-plane>
+      <a-entity id="menu" position="0 1.5 -0.8" rotation="-15 0 0">
+        <a-plane color="#111" height="0.8" width="1.2" opacity="0.9">
+            <a-text value="POPPY SANDBOX" align="center" position="0 0.3 0.01" width="3"></a-text>
+            
+            <a-plane class="menu-btn" color="#0055ff" position="0 0.1 0.02" width="0.8" height="0.15" onclick="spawn('huggy')">
+                <a-text value="Spawn Huggy" align="center" width="2.5"></a-text>
+            </a-plane>
 
-        <a-plane class="menu-button" color="purple" height="0.1" width="0.4" position="0 -0.1 0.02" 
-                 onclick="spawnMonster('purple', 'Catnap')">
-            <a-text value="Catnap" align="center" scale="0.2 0.2 0.2"></a-text>
+            <a-plane class="menu-btn" color="#8800ff" position="0 -0.1 0.02" width="0.8" height="0.15" onclick="spawn('catnap')">
+                <a-text value="Spawn Catnap" align="center" width="2.5"></a-text>
+            </a-plane>
+
+            <a-plane class="menu-btn" color="#ff5500" position="0 -0.3 0.02" width="0.8" height="0.15" onclick="spawn('dogday')">
+                <a-text value="Spawn DogDay" align="center" width="2.5"></a-text>
+            </a-plane>
         </a-plane>
       </a-entity>
 
-      <a-entity id="monster-container"></a-entity>
+      <a-entity id="container"></a-entity>
 
     </a-scene>
 
     <script>
-      // Logic to spawn monsters in VR space
-      function spawnMonster(color, name) {
-        const container = document.querySelector('#monster-container');
-        const newMonster = document.createElement('a-entity');
+      function spawn(type) {
+        const container = document.querySelector('#container');
+        const entity = document.createElement('a-entity');
         
-        // Random position in front of player
-        const x = (Math.random() - 0.5) * 4;
-        const z = -3 - (Math.random() * 2);
-        
-        newMonster.setAttribute('position', `${x} 0 ${z}`);
-        newMonster.setAttribute('class', 'monster');
-        
-        // Build the monster out of shapes (No PNGs/Downloads)
-        if (name === 'Huggy') {
-            newMonster.innerHTML = `
-                <a-box color="${color}" position="0 1 0" scale="0.6 2 0.4"></a-box> <a-sphere color="${color}" position="0 2.2 0" scale="0.4 0.4 0.4"></a-sphere> `;
-        } else {
-            newMonster.innerHTML = `
-                <a-sphere color="${color}" position="0 0.5 0" scale="0.8 0.8 0.8"></a-sphere> <a-sphere color="${color}" position="0 1.2 0" scale="0.5 0.5 0.5"></a-sphere> `;
-        }
+        // Setup stats based on type
+        let color = "blue";
+        let height = 3;
+        if(type === 'catnap') { color = "purple"; height = 2; }
+        if(type === 'dogday') { color = "orange"; height = 2; }
 
-        // Click monster with Right Controller to "kill" it
-        newMonster.addEventListener('click', function () {
-            this.setAttribute('animation', 'property: scale; to: 0 0 0; dur: 200');
-            setTimeout(() => this.remove(), 200);
+        entity.setAttribute('position', `${(Math.random()-0.5)*5} 0 -4`);
+        entity.setAttribute('class', 'monster');
+        entity.setAttribute('sound', 'src: #spawn-snd; autoplay: true; volume: 2');
+
+        // ANIMATED BODIES (Using built-in animations since we aren't downloading OBJs)
+        entity.innerHTML = `
+          <a-box color="${color}" position="0 ${height/2} 0" scale="0.8 ${height} 0.5"
+                 animation="property: position; dir: alternate; dur: 1000; easing: easeInSine; loop: true; to: 0 ${height/2 + 0.2} 0">
+          </a-box>
+          <a-sphere color="${color}" position="0 ${height + 0.3} 0" scale="0.5 0.5 0.5"></a-sphere>
+        `;
+
+        // Chasing Logic
+        entity.setAttribute('animation__follow', {
+          property: 'position',
+          to: '0 0 0', // Will update in interval
+          dur: 5000,
+          easing: 'linear'
         });
 
-        container.appendChild(newMonster);
+        // Kill Logic
+        entity.addEventListener('click', function() {
+          this.setAttribute('animation__die', 'property: rotation; to: 90 0 0; dur: 500');
+          setTimeout(() => this.remove(), 1000);
+        });
+
+        container.appendChild(entity);
       }
 
-      // Handle Right Trigger for "Shooting"
-      document.querySelector('#right-hand').addEventListener('triggerdown', function () {
-          // A-Frame laser-controls handles the 'click' event automatically via raycaster
-          console.log("Trigger Pressed");
-      });
+      // Update chase targets to follow player position
+      setInterval(() => {
+        const playerPos = document.querySelector('#rig').getAttribute('position');
+        document.querySelectorAll('.monster').forEach(m => {
+          m.setAttribute('animation__follow', `to: ${playerPos.x} 0 ${playerPos.z}; dur: 8000`);
+        });
+      }, 2000);
     </script>
   </body>
 </html>
