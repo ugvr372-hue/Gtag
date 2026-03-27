@@ -1,79 +1,83 @@
 <!DOCTYPE html>
 <html>
   <head>
-    <title>QUEST 3 PRO-PHYSICS</title>
+    <title>QUEST 3 - V1 POLISHED</title>
     <script src="https://aframe.io/releases/1.4.2/aframe.min.js"></script>
-    <script src="https://mixedreality.mozilla.org/ammo.js/builds/ammo.wasm.js"></script>
-    <script src="https://cdn.jsdelivr.net/gh/n5ro/aframe-physics-system@v4.0.1/dist/aframe-physics-system.min.js"></script>
     <script src="https://cdn.jsdelivr.net/gh/donmccurdy/aframe-extras@v6.1.1/dist/aframe-extras.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/gh/c-frame/aframe-cursor-teleport@1.5.0/dist/aframe-cursor-teleport.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/gh/n5ro/aframe-physics-system@v4.0.1/dist/aframe-physics-system.min.js"></script>
   </head>
   <body>
-    <a-scene 
-      physics="driver: ammo; debug: false; gravity: -9.8; iterations: 60"
-      renderer="antialias: true; colorManagement: true; exposure: 1.0;">
+    <a-scene physics="debug: false; gravity: -9.8; iterations: 50">
       
       <a-assets>
         <a-asset-item id="glock-model" src="glock.glb"></a-asset-item>
-        <a-mixin id="arm-mesh" geometry="primitive: cylinder; radius: 0.04; height: 0.3" material="color: #222"></a-mixin>
+        
+        <a-mixin id="arm-geometry" geometry="primitive: box; width: 0.06; height: 0.06; depth: 0.4" material="color: #111; roughness: 1"></a-mixin>
       </a-assets>
 
-      <a-box ammo-body="type: static" ammo-shape="type: box" 
-             position="0 -2.5 0" width="100" height="5" depth="100" 
-             color="#111" roughness="1">
+      <a-box static-body 
+             position="0 -1 0" 
+             width="100" height="2" depth="100" 
+             color="#151515" roughness="0.9" shadow="receive: true">
       </a-box>
 
-      <a-entity id="rig" movement-controls="fly: false; speed: 0.2">
-        <a-entity camera position="0 1.6 0" look-controls></a-entity>
+      <a-entity id="rig" movement-controls="controls: gamepad, keyboard; speed: 0.15">
+        <a-entity camera position="0 1.6 0" look-controls="pointerLockEnabled: true"></a-entity>
         
-        <a-entity id="leftHand" hand-controls="hand: left" ammo-body="type: kinematic" ammo-shape="type: sphere; sphereRadius: 0.04">
-            <a-entity mixin="arm-mesh" rotation="90 0 0" position="0 0 0.15"></a-entity>
+        <a-entity id="left-hand" hand-controls="hand: left">
+           <a-entity mixin="arm-geometry" position="0 0 0.2" class="arm-mesh"></a-entity>
         </a-entity>
 
-        <a-entity id="rightHand" hand-controls="hand: right" ammo-body="type: kinematic" ammo-shape="type: sphere; sphereRadius: 0.04">
-            <a-entity mixin="arm-mesh" rotation="90 0 0" position="0 0 0.15"></a-entity>
-            <a-entity gltf-model="#glock-model" scale="0.01 0.01 0.01" rotation="-90 0 0" position="0 -0.05 -0.1"></a-entity>
+        <a-entity id="right-hand" hand-controls="hand: right">
+           <a-entity mixin="arm-geometry" position="0 0 0.2" class="arm-mesh"></a-entity>
+           <a-entity gltf-model="#glock-model" 
+                     scale="0.01 0.01 0.01" 
+                     rotation="-90 0 0" 
+                     position="0 -0.05 -0.1">
+           </a-entity>
         </a-entity>
       </a-entity>
 
-      <a-entity position="0 1 -3">
-        <a-box ammo-body="type: dynamic; mass: 2" ammo-shape="type: box" color="red" width="0.5" height="0.5" depth="0.5"></a-box>
-      </a-entity>
+      <a-box dynamic-body="mass: 5" position="0 1 -3" color="#ff0000" shadow></a-box>
+      <a-box dynamic-body="mass: 5" position="0.2 2 -3" color="#ff0000" shadow></a-box>
+
+      <a-sky color="#050505"></a-sky>
+      <a-entity light="type: ambient; intensity: 0.3"></a-entity>
+      <a-entity light="type: point; intensity: 1; position: 2 4 2; castShadow: true"></a-entity>
 
     </a-scene>
 
     <script>
-      // Bone-Breaking Physics Logic
-      AFRAME.registerComponent('finger-physics', {
+      // LOGIC: Finger Bending/Breaking Simulation
+      AFRAME.registerComponent('bone-snapper', {
         tick: function () {
-          const hands = document.querySelectorAll('[hand-controls]');
-          hands.forEach(hand => {
-            // This is where we'd calculate the joint stress.
-            // If the distance between finger tip and palm < threshold while colliding:
-            // Trigger "Snap" sound and disable kinematic follow.
-          });
+          // This would monitor the collision force between hand sensors
+          // If collision > force, we play a "crunch" and disable the arm mesh
         }
       });
 
-      // Weapon Firing Logic
-      window.addEventListener('triggerdown', (e) => {
-        // Create a physics-based projectile (bullet) at hand position
-        const scene = document.querySelector('a-scene');
-        const bullet = document.createElement('a-sphere');
-        const handPos = document.querySelector('#rightHand').object3D.position;
+      // SHOOTING MECHANIC
+      window.addEventListener('triggerdown', function (evt) {
+        let scene = document.querySelector('a-scene');
+        let bullet = document.createElement('a-sphere');
         
+        // Get hand position
+        let hand = document.querySelector('#right-hand').object3D;
+        let worldPos = new THREE.Vector3();
+        hand.getWorldPosition(worldPos);
+
         bullet.setAttribute('radius', '0.02');
-        bullet.setAttribute('color', 'yellow');
-        bullet.setAttribute('position', `${handPos.x} ${handPos.y} ${handPos.z - 0.2}`);
-        bullet.setAttribute('ammo-body', 'type: dynamic; mass: 0.1');
-        bullet.setAttribute('ammo-shape', 'type: sphere');
+        bullet.setAttribute('color', '#fff');
+        bullet.setAttribute('position', worldPos);
+        bullet.setAttribute('dynamic-body', 'mass: 0.1');
         
         scene.appendChild(bullet);
-        
-        // Apply Force
-        setTimeout(() => {
-          bullet.body.setLinearVelocity(new Ammo.btVector3(0, 0, -50));
-        }, 10);
+
+        // Impulse logic for physics
+        bullet.addEventListener('body-loaded', function () {
+            let force = new CANNON.Vec3(0, 0, -40); 
+            bullet.body.applyImpulse(force, new CANNON.Vec3(0,0,0));
+        });
       });
     </script>
   </body>
