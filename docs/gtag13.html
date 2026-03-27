@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<title>Poppy Playtime VR Sandbox</title>
+<title>Poppy Playtime VR Sandbox Stable</title>
 <script src="https://aframe.io/releases/1.4.2/aframe.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/aframe-extras@6.1.1/dist/aframe-extras.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/aframe-physics-system@4.0.1/dist/aframe-physics-system.min.js"></script>
@@ -11,7 +11,7 @@
     position: absolute;
     top: 10%;
     left: 10%;
-    width: 300px;
+    width: 250px;
     background: rgba(0,0,0,0.9);
     color: #ff0;
     font-family: monospace;
@@ -26,7 +26,7 @@
 
 <div id="modMenu">
   <h3>MOD MENU</h3>
-  <button onclick="toggleHuggyCombat()">Toggle Huggy Wuggy Combat</button>
+  <button onclick="toggleHuggyCombat()">Toggle Huggy Combat</button>
 </div>
 
 <a-scene physics="gravity:-9.8" vr-mode-ui="enabled:true" background="color:#222">
@@ -35,7 +35,7 @@
   <a-entity light="type: ambient; intensity: 0.5"></a-entity>
   <a-entity light="type: directional; intensity:0.7; castShadow:true" position="5 10 5"></a-entity>
   
-  <!-- Player rig with joystick -->
+  <!-- Player rig -->
   <a-entity id="rig" position="0 1.6 5" movement-controls="speed:0.1" physics-body="shape:capsule; mass:80">
     <a-camera wasd-controls look-controls></a-camera>
     <a-entity hand-controls="hand: left" physics-body></a-entity>
@@ -49,7 +49,7 @@
   <a-box position="-10 0 0" depth="20" height="4" width="0.2" color="#888" static-body></a-box>
   <a-box position="10 0 0" depth="20" height="4" width="0.2" color="#888" static-body></a-box>
 
-  <!-- Sandbox objects -->
+  <!-- Sandbox objects (limited to 3 for performance) -->
   <a-box class="sandboxObj" position="1 0 -1" depth="0.5" height="0.5" width="0.5" color="#f00" dynamic-body></a-box>
   <a-box class="sandboxObj" position="-1 0 -2" depth="0.5" height="0.5" width="0.5" color="#0f0" dynamic-body></a-box>
   <a-box class="sandboxObj" position="2 0 -3" depth="0.5" height="0.5" width="0.5" color="#00f" dynamic-body></a-box>
@@ -58,39 +58,45 @@
   <a-box id="huggy" position="0 0 -5" depth="0.5" height="2" width="0.5" color="#ff69b4" dynamic-body></a-box>
 
   <script>
+    // Huggy combat toggle
     let huggyCombat = false;
     const huggy = document.getElementById('huggy');
-
-    function toggleHuggyCombat(){
+    function toggleHuggyCombat() {
       huggyCombat = !huggyCombat;
-      if(huggyCombat) alert("Huggy Wuggy Combat: ON");
-      else alert("Huggy Wuggy Combat: OFF");
+      alert("Huggy Combat: " + (huggyCombat ? "ON" : "OFF"));
     }
 
-    // Huggy Wuggy patrol AI
-    setInterval(()=>{
-      if(huggyCombat){
-        const rig = document.getElementById('rig');
-        const playerPos = rig.getAttribute('position');
-        const huggyPos = huggy.getAttribute('position');
-        // Move toward player
-        let dirX = (playerPos.x - huggyPos.x) * 0.02;
-        let dirZ = (playerPos.z - huggyPos.z) * 0.02;
-        huggy.setAttribute('position', {x: huggyPos.x + dirX, y: huggyPos.y, z: huggyPos.z + dirZ});
+    // Optimized Huggy AI using tick()
+    AFRAME.registerComponent('huggy-ai', {
+      tick: function(time, delta) {
+        if(huggyCombat){
+          const rigPos = document.getElementById('rig').getAttribute('position');
+          const huggyPos = huggy.getAttribute('position');
+          let dx = rigPos.x - huggyPos.x;
+          let dz = rigPos.z - huggyPos.z;
+          // Limit movement speed to prevent freeze
+          huggy.setAttribute('position',{
+            x: huggyPos.x + dx*0.005,
+            y: huggyPos.y,
+            z: huggyPos.z + dz*0.005
+          });
+        }
       }
-    }, 50);
+    });
+    huggy.setAttribute('huggy-ai','');
 
-    // GrabPack: extendable grabbing (simplified)
+    // GrabPack: simple grab mechanic (optimized)
     const hands = document.querySelectorAll('[hand-controls]');
-    hands.forEach(hand => {
-      hand.addEventListener('gripdown', () => {
+    hands.forEach(hand=>{
+      hand.addEventListener('gripdown', ()=>{
         const objs = document.querySelectorAll('.sandboxObj');
         objs.forEach(obj=>{
           const handPos = hand.object3D.position;
           const objPos = obj.object3D.position;
           const dist = handPos.distanceTo(objPos);
           if(dist<1){
-            obj.setAttribute('position', {x: handPos.x, y: handPos.y, z: handPos.z});
+            // Move object only once per grip event to reduce physics stress
+            obj.setAttribute('position',{x:handPos.x, y:handPos.y, z:handPos.z});
           }
         });
       });
