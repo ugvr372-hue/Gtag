@@ -1,116 +1,102 @@
 <!DOCTYPE html>
 <html>
   <head>
-    <title>Monke Sandbox Pro</title>
+    <title>Monke Sandbox - G-Tag Locomotion</title>
     <script src="https://aframe.io/releases/1.4.2/aframe.min.js"></script>
     <script src="https://cdn.jsdelivr.net/gh/c-frame/aframe-extras@7.2.0/dist/aframe-extras.min.js"></script>
     <script src="https://unpkg.com/aframe-environment-component@1.3.2/dist/aframe-environment-component.min.js"></script>
     <script src="https://cdn.jsdelivr.net/gh/n5ro/aframe-physics-system@v4.0.1/dist/aframe-physics-system.min.js"></script>
   </head>
   <body>
-    <a-scene physics="debug: false; gravity: -9.8">
+    <a-scene physics="debug: false; gravity: -9.8; iterations: 20">
       
       <a-assets>
-        <a-asset-item id="hand-l" src="https://vazxmixjsiawhamurptx.supabase.co/storage/v1/object/public/models/hand-left/model.gltf"></a-asset-item>
-        <a-asset-item id="hand-r" src="https://vazxmixjsiawhamurptx.supabase.co/storage/v1/object/public/models/hand-right/model.gltf"></a-asset-item>
+        <a-asset-item id="hand-model" src="https://vazxmixjsiawhamurptx.supabase.co/storage/v1/object/public/models/hand-left/model.gltf"></a-asset-item>
       </a-assets>
 
-      <a-entity environment="preset: osiris; ground: hills; dressingAmount: 40" static-body></a-entity>
+      <a-entity environment="preset: osiris; ground: hills; dressingAmount: 50" static-body></a-entity>
 
-      <a-entity id="rig" movement-controls="fly: false; speed: 0.3" kinematic-body="radius: 0.35">
+      <a-entity id="rig" movement-controls="fly: false; speed: 0.3" kinematic-body="radius: 0.3">
+        
         <a-entity camera id="head" position="0 1.6 0" look-controls>
-            <a-cylinder id="my-body" color="gray" height="1.5" radius="0.2" position="0 -0.8 -0.1" visible="false"></a-cylinder>
-        </a-camera>
+            <a-box color="#222" scale="0.25 0.15 0.2" position="0 0 -0.05"></a-box> 
+            <a-cylinder color="gray" radius="0.02" height="0.4" rotation="90 0 0" position="0 0 -0.2"></a-cylinder> <a-cylinder id="multiplayer-body" color="#5a3d2b" height="1.2" radius="0.25" position="0 -0.8 0.25" opacity="0.8"></a-cylinder>
+        </a-entity>
         
         <a-entity id="left-hand" oculus-touch-controls="hand: left">
-            <a-gltf-model src="#hand-l" scale="1.5 1.5 1.5"></a-gltf-model>
-            
-            <a-entity id="mod-menu" position="0 0.08 0.05" rotation="-45 0 0" visible="false">
-                <a-plane color="#000" height="0.4" width="0.28" opacity="0.9">
-                    <a-text id="menu-title" value="PG 1" align="center" position="0 0.16 0.01" scale="0.1 0.1 0.1"></a-text>
-                    
-                    <a-entity id="page-1">
-                        <a-plane class="menu-btn" color="#0033ff" position="0 0.06 0.02" width="0.22" height="0.05" onclick="setMode('huggy')"><a-text value="Huggy Gun" align="center" scale="0.08 0.08 0.08"></a-text></a-plane>
-                        <a-plane class="menu-btn" color="#6600cc" position="0 0 0.02" width="0.22" height="0.05" onclick="setMode('catnap')"><a-text value="Catnap Gun" align="center" scale="0.08 0.08 0.08"></a-text></a-plane>
-                        <a-plane class="menu-btn" color="#00ffff" position="0 -0.06 0.02" width="0.22" height="0.05" onclick="setMode('teleport')"><a-text value="TP Gun" align="center" scale="0.08 0.08 0.08"></a-text></a-plane>
-                    </a-entity>
-
-                    <a-entity id="page-2" visible="false">
-                        <a-plane class="menu-btn" color="#ff0000" position="0 0.06 0.02" width="0.22" height="0.05" onclick="clearAll()"><a-text value="Clear All" align="center" scale="0.08 0.08 0.08"></a-text></a-plane>
-                        <a-plane class="menu-btn" color="#00ff00" position="0 0 0.02" width="0.22" height="0.05" onclick="setMode('platforms')"><a-text value="Platforms" align="center" scale="0.08 0.08 0.08"></a-text></a-plane>
-                        <a-plane class="menu-btn" color="#555" position="0 -0.06 0.02" width="0.22" height="0.05" onclick="location.reload()"><a-text value="Restart" align="center" scale="0.08 0.08 0.08"></a-text></a-plane>
-                    </a-entity>
-
-                    <a-plane class="menu-btn" color="#222" position="0 -0.14 0.02" width="0.22" height="0.05" onclick="nextPage()">
-                        <a-text value="NEXT" align="center" scale="0.08 0.08 0.08"></a-text>
+            <a-cylinder color="#5a3d2b" radius="0.04" height="1.2" position="0 0 -0.5" rotation="90 0 0"></a-cylinder>
+            <a-sphere color="#5a3d2b" radius="0.1" position="0 0 -1.1" static-body="shape: sphere; sphereRadius: 0.1">
+                <a-entity id="mod-menu" position="0 0.12 0" rotation="-90 0 0" visible="false">
+                    <a-plane color="#111" height="0.4" width="0.25">
+                        <a-text value="MONKE MODS" align="center" position="0 0.15 0.01" scale="0.1 0.1 0.1"></a-text>
+                        <a-plane class="menu-btn" color="blue" position="0 0.05 0.02" width="0.2" height="0.05" onclick="setGun('huggy')"><a-text value="Huggy" align="center" scale="0.08 0.08 0.08"></a-text></a-plane>
+                        <a-plane class="menu-btn" color="purple" position="0 -0.05 0.02" width="0.2" height="0.05" onclick="setGun('catnap')"><a-text value="Catnap" align="center" scale="0.08 0.08 0.08"></a-text></a-plane>
+                        <a-plane class="menu-btn" color="cyan" position="0 -0.15 0.02" width="0.2" height="0.05" onclick="setGun('tp')"><a-text value="TP Gun" align="center" scale="0.08 0.08 0.08"></a-text></a-plane>
                     </a-plane>
-                </a-plane>
-            </a-entity>
+                </a-entity>
+            </a-sphere>
         </a-entity>
 
-        <a-entity id="right-hand" oculus-touch-controls="hand: right" laser-controls="hand: right" raycaster="objects: .menu-btn, .environmentGround, .monster; far: 40">
-            <a-gltf-model src="#hand-r" scale="1.5 1.5 1.5"></a-gltf-model>
-            <a-sphere id="gun-indicator" position="0 0 -0.1" radius="0.015" color="blue"></a-sphere>
+        <a-entity id="right-hand" oculus-touch-controls="hand: right" laser-controls="hand: right" raycaster="objects: .menu-btn, .environmentGround; far: 40">
+            <a-cylinder color="#5a3d2b" radius="0.04" height="1.2" position="0 0 -0.5" rotation="90 0 0"></a-cylinder>
+            <a-sphere id="gun-hand" color="#5a3d2b" radius="0.1" position="0 0 -1.1" static-body="shape: sphere; sphereRadius: 0.1">
+                <a-sphere id="gun-tip" position="0 0 -0.1" radius="0.02" color="blue"></a-sphere>
+            </a-sphere>
         </a-entity>
       </a-entity>
 
-      <a-entity id="world-objects"></a-entity>
+      <a-entity id="spawn-root"></a-entity>
 
     </a-scene>
 
     <script>
-      let mode = 'huggy';
-      let page = 1;
+      let currentMode = 'huggy';
 
-      // Menu Toggle (X button)
+      // Toggle Menu with X button
       document.querySelector('#left-hand').addEventListener('xbuttondown', () => {
-          const m = document.querySelector('#mod-menu');
-          m.setAttribute('visible', !m.getAttribute('visible'));
+          const menu = document.querySelector('#mod-menu');
+          menu.setAttribute('visible', !menu.getAttribute('visible'));
       });
 
-      function nextPage() {
-          page = (page === 1) ? 2 : 1;
-          document.querySelector('#page-1').setAttribute('visible', page === 1);
-          document.querySelector('#page-2').setAttribute('visible', page === 2);
-          document.querySelector('#menu-title').setAttribute('value', `PG ${page}`);
+      function setGun(m) {
+          currentMode = m;
+          const colors = {huggy: 'blue', catnap: 'purple', tp: 'cyan'};
+          document.querySelector('#gun-tip').setAttribute('color', colors[m]);
       }
 
-      function setMode(m) {
-          mode = m;
-          const colors = {huggy:'blue', catnap:'purple', teleport:'cyan', platforms:'green'};
-          document.querySelector('#gun-indicator').setAttribute('color', colors[m]);
-      }
-
-      function clearAll() { document.querySelector('#world-objects').innerHTML = ''; }
-
-      // II STUPID GUN LOGIC
+      // Shooting Logic
       document.querySelector('#right-hand').addEventListener('triggerdown', function() {
           const ray = this.components.raycaster;
           const hit = ray.getIntersection(document.querySelector('.environmentGround'));
           if (!hit) return;
 
-          if (mode === 'teleport') {
+          if (currentMode === 'tp') {
               document.querySelector('#rig').setAttribute('position', {x: hit.point.x, y: 0, z: hit.point.z});
-          } else if (mode === 'platforms') {
-              const p = document.createElement('a-box');
-              p.setAttribute('position', hit.point);
-              p.setAttribute('scale', '2 0.1 2');
-              p.setAttribute('color', 'green');
-              p.setAttribute('static-body', '');
-              document.querySelector('#world-objects').appendChild(p);
           } else {
-              spawnMonster(mode, hit.point);
+              const m = document.createElement('a-entity');
+              m.setAttribute('position', hit.point);
+              m.setAttribute('class', 'monster');
+              const c = currentMode === 'huggy' ? 'blue' : 'purple';
+              m.innerHTML = `<a-box color="${c}" position="0 1 0" scale="0.4 2 0.3"></a-box><a-sphere color="${c}" position="0 2.2 0" radius="0.3"></a-sphere>`;
+              document.querySelector('#spawn-root').appendChild(m);
           }
       });
 
-      function spawnMonster(type, pos) {
-          const m = document.createElement('a-entity');
-          m.setAttribute('position', pos);
-          m.setAttribute('class', 'monster');
-          const c = type === 'huggy' ? 'blue' : 'purple';
-          m.innerHTML = `<a-box color="${c}" position="0 1 0" scale="0.4 2 0.3"></a-box><a-sphere color="${c}" position="0 2.2 0" radius="0.3"></a-sphere>`;
-          document.querySelector('#world-objects').appendChild(m);
-      }
+      // G-TAG LOCOMOTION HELPER
+      // This script detects if the hands "hit" the ground and applies an upward force
+      AFRAME.registerComponent('monke-move', {
+        tick: function() {
+          const rig = document.querySelector('#rig');
+          const lHand = document.querySelector('#left-hand').object3D.position;
+          const rHand = document.querySelector('#right-hand').object3D.position;
+          
+          // If hand is below floor level, push rig up
+          if (lHand.y < 0.2 || rHand.y < 0.2) {
+             // Simple physics bounce
+             rig.body.applyImpulse(new CANNON.Vec3(0, 2, 0), new CANNON.Vec3().copy(rig.object3D.position));
+          }
+        }
+      });
     </script>
   </body>
 </html>
