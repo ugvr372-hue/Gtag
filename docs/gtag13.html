@@ -1,59 +1,60 @@
 <!DOCTYPE html>
 <html>
   <head>
-    <title>Poppy Sandbox - Pro Menu</title>
+    <title>Monke Sandbox Pro</title>
     <script src="https://aframe.io/releases/1.4.2/aframe.min.js"></script>
     <script src="https://cdn.jsdelivr.net/gh/c-frame/aframe-extras@7.2.0/dist/aframe-extras.min.js"></script>
     <script src="https://unpkg.com/aframe-environment-component@1.3.2/dist/aframe-environment-component.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/gh/n5ro/aframe-physics-system@v4.0.1/dist/aframe-physics-system.min.js"></script>
   </head>
   <body>
-    <a-scene xr-mode-ui="enabled: true" webxr="referenceSpaceType: local-floor">
+    <a-scene physics="debug: false; gravity: -9.8">
       
       <a-assets>
         <a-asset-item id="hand-l" src="https://vazxmixjsiawhamurptx.supabase.co/storage/v1/object/public/models/hand-left/model.gltf"></a-asset-item>
         <a-asset-item id="hand-r" src="https://vazxmixjsiawhamurptx.supabase.co/storage/v1/object/public/models/hand-right/model.gltf"></a-asset-item>
       </a-assets>
 
-      <a-entity environment="preset: osiris; dressingAmount: 50; ground: hills"></a-entity>
+      <a-entity environment="preset: osiris; ground: hills; dressingAmount: 40" static-body></a-entity>
 
-      <a-entity id="rig" movement-controls="fly: false; speed: 0.2">
-        <a-camera id="head" position="0 1.6 0" look-controls>
-            <a-cylinder color="gray" height="1.5" radius="0.2" position="0 -0.8 0"></a-cylinder>
+      <a-entity id="rig" movement-controls="fly: false; speed: 0.3" kinematic-body="radius: 0.35">
+        <a-entity camera id="head" position="0 1.6 0" look-controls>
+            <a-cylinder id="my-body" color="gray" height="1.5" radius="0.2" position="0 -0.8 -0.1" visible="false"></a-cylinder>
         </a-camera>
         
         <a-entity id="left-hand" oculus-touch-controls="hand: left">
             <a-gltf-model src="#hand-l" scale="1.5 1.5 1.5"></a-gltf-model>
             
-            <a-entity id="mod-menu" position="0.1 0.1 0" rotation="-90 0 0" visible="false">
-                <a-plane color="#111" height="0.45" width="0.3" opacity="0.9">
-                    <a-text id="menu-title" value="PAGE 1/2" align="center" position="0 0.18 0.01" scale="0.12 0.12 0.12"></a-text>
+            <a-entity id="mod-menu" position="0 0.08 0.05" rotation="-45 0 0" visible="false">
+                <a-plane color="#000" height="0.4" width="0.28" opacity="0.9">
+                    <a-text id="menu-title" value="PG 1" align="center" position="0 0.16 0.01" scale="0.1 0.1 0.1"></a-text>
                     
                     <a-entity id="page-1">
-                        <a-plane class="menu-btn" color="#0033ff" position="0 0.08 0.02" width="0.25" height="0.06" onclick="setMode('huggy')"><a-text value="Huggy Gun" align="center" scale="0.1 0.1 0.1"></a-text></a-plane>
-                        <a-plane class="menu-btn" color="#6600cc" position="0 0.01 0.02" width="0.25" height="0.06" onclick="setMode('catnap')"><a-text value="Catnap Gun" align="center" scale="0.1 0.1 0.1"></a-text></a-plane>
-                        <a-plane class="menu-btn" color="#ff00ff" position="0 -0.06 0.02" width="0.25" height="0.06" onclick="setMode('teleport')"><a-text value="Teleport Gun" align="center" scale="0.1 0.1 0.1"></a-text></a-plane>
+                        <a-plane class="menu-btn" color="#0033ff" position="0 0.06 0.02" width="0.22" height="0.05" onclick="setMode('huggy')"><a-text value="Huggy Gun" align="center" scale="0.08 0.08 0.08"></a-text></a-plane>
+                        <a-plane class="menu-btn" color="#6600cc" position="0 0 0.02" width="0.22" height="0.05" onclick="setMode('catnap')"><a-text value="Catnap Gun" align="center" scale="0.08 0.08 0.08"></a-text></a-plane>
+                        <a-plane class="menu-btn" color="#00ffff" position="0 -0.06 0.02" width="0.22" height="0.05" onclick="setMode('teleport')"><a-text value="TP Gun" align="center" scale="0.08 0.08 0.08"></a-text></a-plane>
                     </a-entity>
 
                     <a-entity id="page-2" visible="false">
-                        <a-plane class="menu-btn" color="red" position="0 0.08 0.02" width="0.25" height="0.06" onclick="clearAll()"><a-text value="Clear All" align="center" scale="0.1 0.1 0.1"></a-text></a-plane>
-                        <a-plane class="menu-btn" color="green" position="0 0.01 0.02" width="0.25" height="0.06" onclick="location.reload()"><a-text value="Restart" align="center" scale="0.1 0.1 0.1"></a-text></a-plane>
-                        <a-plane class="menu-btn" color="orange" position="0 -0.06 0.02" width="0.25" height="0.06" onclick="toggleGTag()"><a-text id="gt-text" value="G-Tag: ON" align="center" scale="0.1 0.1 0.1"></a-text></a-plane>
+                        <a-plane class="menu-btn" color="#ff0000" position="0 0.06 0.02" width="0.22" height="0.05" onclick="clearAll()"><a-text value="Clear All" align="center" scale="0.08 0.08 0.08"></a-text></a-plane>
+                        <a-plane class="menu-btn" color="#00ff00" position="0 0 0.02" width="0.22" height="0.05" onclick="setMode('platforms')"><a-text value="Platforms" align="center" scale="0.08 0.08 0.08"></a-text></a-plane>
+                        <a-plane class="menu-btn" color="#555" position="0 -0.06 0.02" width="0.22" height="0.05" onclick="location.reload()"><a-text value="Restart" align="center" scale="0.08 0.08 0.08"></a-text></a-plane>
                     </a-entity>
 
-                    <a-plane class="menu-btn" color="#444" position="0 -0.15 0.02" width="0.25" height="0.06" onclick="nextPage()">
-                        <a-text value="NEXT PAGE" align="center" scale="0.1 0.1 0.1"></a-text>
+                    <a-plane class="menu-btn" color="#222" position="0 -0.14 0.02" width="0.22" height="0.05" onclick="nextPage()">
+                        <a-text value="NEXT" align="center" scale="0.08 0.08 0.08"></a-text>
                     </a-plane>
                 </a-plane>
             </a-entity>
         </a-entity>
 
-        <a-entity id="right-hand" oculus-touch-controls="hand: right" laser-controls="hand: right" raycaster="objects: .menu-btn, .environmentGround, .monster; far: 30">
+        <a-entity id="right-hand" oculus-touch-controls="hand: right" laser-controls="hand: right" raycaster="objects: .menu-btn, .environmentGround, .monster; far: 40">
             <a-gltf-model src="#hand-r" scale="1.5 1.5 1.5"></a-gltf-model>
-            <a-cylinder id="gun-vis" position="0 0 -0.15" rotation="90 0 0" radius="0.01" height="0.1" color="blue"></a-cylinder>
+            <a-sphere id="gun-indicator" position="0 0 -0.1" radius="0.015" color="blue"></a-sphere>
         </a-entity>
       </a-entity>
 
-      <a-entity id="world"></a-entity>
+      <a-entity id="world-objects"></a-entity>
 
     </a-scene>
 
@@ -61,37 +62,42 @@
       let mode = 'huggy';
       let page = 1;
 
-      // Handle X-button toggle
+      // Menu Toggle (X button)
       document.querySelector('#left-hand').addEventListener('xbuttondown', () => {
-          const menu = document.querySelector('#mod-menu');
-          menu.setAttribute('visible', !menu.getAttribute('visible'));
+          const m = document.querySelector('#mod-menu');
+          m.setAttribute('visible', !m.getAttribute('visible'));
       });
 
       function nextPage() {
-          page = page === 1 ? 2 : 1;
+          page = (page === 1) ? 2 : 1;
           document.querySelector('#page-1').setAttribute('visible', page === 1);
           document.querySelector('#page-2').setAttribute('visible', page === 2);
-          document.querySelector('#menu-title').setAttribute('value', `PAGE ${page}/2`);
+          document.querySelector('#menu-title').setAttribute('value', `PG ${page}`);
       }
 
-      function setMode(newMode) {
-          mode = newMode;
-          const vis = document.querySelector('#gun-vis');
-          const colors = {huggy: 'blue', catnap: 'purple', teleport: 'cyan'};
-          vis.setAttribute('color', colors[newMode] || 'white');
+      function setMode(m) {
+          mode = m;
+          const colors = {huggy:'blue', catnap:'purple', teleport:'cyan', platforms:'green'};
+          document.querySelector('#gun-indicator').setAttribute('color', colors[m]);
       }
 
-      function clearAll() { document.querySelector('#world').innerHTML = ''; }
+      function clearAll() { document.querySelector('#world-objects').innerHTML = ''; }
 
-      // GUN LOGIC (Shoot to Spawn or Teleport)
+      // II STUPID GUN LOGIC
       document.querySelector('#right-hand').addEventListener('triggerdown', function() {
           const ray = this.components.raycaster;
           const hit = ray.getIntersection(document.querySelector('.environmentGround'));
-          
           if (!hit) return;
 
           if (mode === 'teleport') {
               document.querySelector('#rig').setAttribute('position', {x: hit.point.x, y: 0, z: hit.point.z});
+          } else if (mode === 'platforms') {
+              const p = document.createElement('a-box');
+              p.setAttribute('position', hit.point);
+              p.setAttribute('scale', '2 0.1 2');
+              p.setAttribute('color', 'green');
+              p.setAttribute('static-body', '');
+              document.querySelector('#world-objects').appendChild(p);
           } else {
               spawnMonster(mode, hit.point);
           }
@@ -101,15 +107,9 @@
           const m = document.createElement('a-entity');
           m.setAttribute('position', pos);
           m.setAttribute('class', 'monster');
-          
-          if(type === 'huggy') {
-              m.innerHTML = `<a-box color="blue" position="0 1.25 0" scale="0.5 2.5 0.3"></a-box><a-sphere color="blue" position="0 2.8 0" radius="0.3"></a-sphere>`;
-          } else {
-              m.innerHTML = `<a-box color="purple" position="0 0.5 0" scale="0.7 0.5 1"></a-box><a-sphere color="purple" position="0 1.1 0.4" radius="0.3"></a-sphere>`;
-          }
-          
-          m.addEventListener('click', function() { this.remove(); });
-          document.querySelector('#world').appendChild(m);
+          const c = type === 'huggy' ? 'blue' : 'purple';
+          m.innerHTML = `<a-box color="${c}" position="0 1 0" scale="0.4 2 0.3"></a-box><a-sphere color="${c}" position="0 2.2 0" radius="0.3"></a-sphere>`;
+          document.querySelector('#world-objects').appendChild(m);
       }
     </script>
   </body>
