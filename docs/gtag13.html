@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html>
   <head>
-    <title>Quest 3 Poppy VR</title>
+    <title>Quest 3 Poppy Sandbox VR</title>
     <script src="https://aframe.io/releases/1.4.2/aframe.min.js"></script>
     <script src="https://cdn.jsdelivr.net/gh/donmccurdy/aframe-extras@v6.1.1/dist/aframe-extras.min.js"></script>
     <script src="https://unpkg.com/aframe-environment-component@1.3.2/dist/aframe-environment-component.min.js"></script>
@@ -14,32 +14,36 @@
         <a-asset-item id="rightHandModel" src="https://vazxmixjsiawhamurptx.supabase.co/storage/v1/object/public/models/hand-right/model.gltf"></a-asset-item>
       </a-assets>
 
-      <a-entity environment="preset: tron; playArea: 10; lighting: point; shadow: true"></a-entity>
+      <a-entity environment="preset: forest; lighting: point; shadow: true"></a-entity>
 
-      <a-entity id="rig" movement-controls="fly: false; speed: 0.15">
+      <a-entity id="rig" movement-controls="fly: false; speed: 0.2">
         <a-camera id="head" position="0 1.6 0" look-controls></a-camera>
         
-        <a-entity oculus-touch-controls="hand: left" laser-controls="hand: left" raycaster="objects: .menu-btn; far: 5">
+        <a-entity id="left-controller" oculus-touch-controls="hand: left">
             <a-gltf-model src="#leftHandModel" material="color: blue" scale="1.5 1.5 1.5"></a-gltf-model>
+            
+            <a-entity id="wrist-menu" position="0 0.1 0.1" rotation="-90 0 0" visible="false">
+                <a-plane color="#222" height="0.6" width="0.4" opacity="0.9">
+                    <a-text value="MOD MENU" align="center" position="0 0.25 0.01" scale="0.2 0.2 0.2"></a-text>
+                    
+                    <a-plane class="menu-btn" color="blue" position="0 0.1 0.02" width="0.3" height="0.08" onclick="spawn('huggy')">
+                        <a-text value="Huggy" align="center" scale="0.15 0.15 0.15"></a-text>
+                    </a-plane>
+                    
+                    <a-plane class="menu-btn" color="purple" position="0 0 0.02" width="0.3" height="0.08" onclick="spawn('catnap')">
+                        <a-text value="Catnap" align="center" scale="0.15 0.15 0.15"></a-text>
+                    </a-plane>
+
+                    <a-plane class="menu-btn" color="red" position="0 -0.2 0.02" width="0.3" height="0.08" onclick="toggleGod()">
+                        <a-text id="god-text" value="GodMode: OFF" align="center" scale="0.12 0.12 0.12"></a-text>
+                    </a-plane>
+                </a-plane>
+            </a-entity>
         </a-entity>
 
-        <a-entity id="right-hand" oculus-touch-controls="hand: right" laser-controls="hand: right" raycaster="objects: .monster; far: 20">
+        <a-entity id="right-controller" oculus-touch-controls="hand: right" laser-controls="hand: right" raycaster="objects: .menu-btn, .monster; far: 10">
             <a-gltf-model src="#rightHandModel" material="color: red" scale="1.5 1.5 1.5"></a-gltf-model>
         </a-entity>
-      </a-entity>
-
-      <a-entity id="menu" position="0 1.2 -1" rotation="-10 0 0">
-        <a-plane color="#000" height="0.6" width="1" opacity="0.9">
-            <a-text value="VR SANDBOX" align="center" position="0 0.2 0.01" scale="0.4 0.4 0.4"></a-text>
-            
-            <a-plane class="menu-btn" color="blue" position="0 0.05 0.02" width="0.8" height="0.1" onclick="spawn('huggy')">
-                <a-text value="Spawn Huggy" align="center" scale="0.2 0.2 0.2"></a-text>
-            </a-plane>
-
-            <a-plane class="menu-btn" color="purple" position="0 -0.1 0.02" width="0.8" height="0.1" onclick="spawn('catnap')">
-                <a-text value="Spawn Catnap" align="center" scale="0.2 0.2 0.2"></a-text>
-            </a-plane>
-        </a-plane>
       </a-entity>
 
       <a-entity id="spawn-container"></a-entity>
@@ -47,34 +51,38 @@
     </a-scene>
 
     <script>
+      let godMode = false;
+
+      // Handle Y-Button Toggle
+      document.querySelector('#left-controller').addEventListener('abuttondown', function () {
+          const menu = document.querySelector('#wrist-menu');
+          menu.setAttribute('visible', !menu.getAttribute('visible'));
+      });
+
+      function toggleGod() {
+          godMode = !godMode;
+          document.querySelector('#god-text').setAttribute('value', `GodMode: ${godMode ? 'ON' : 'OFF'}`);
+      }
+
       function spawn(type) {
         const container = document.querySelector('#spawn-container');
         const monster = document.createElement('a-entity');
-        
-        // Random spawn 5 meters ahead
-        monster.setAttribute('position', `${(Math.random()-0.5)*4} 0 -5`);
+        monster.setAttribute('position', `${(Math.random()-0.5)*4} 0 -3`);
         monster.setAttribute('class', 'monster');
-        
-        // Using high-detail primitives since we can't download OBJs
-        // Huggy (Tall)
+
         if(type === 'huggy') {
+            // "Sculpted" Huggy: Boxy body + separate long limbs + head
             monster.innerHTML = `
-                <a-capsule color="blue" position="0 1.5 0" radius="0.3" height="3" 
-                           animation="property: position; dir: alternate; dur: 800; loop: true; to: 0 1.6 0">
-                </a-capsule>
-                <a-sphere color="blue" position="0 3.2 0" radius="0.4"></a-sphere>
-            `;
-        } else { // Catnap (Low)
+                <a-box color="blue" position="0 1.2 0" scale="0.6 1.5 0.4"></a-box> <a-sphere color="blue" position="0 2.2 0" radius="0.4"></a-sphere> <a-box color="blue" position="0.4 1 0" scale="0.15 2 0.15"></a-box> <a-box color="blue" position="-0.4 1 0" scale="0.15 2 0.15"></a-box> <a-box color="yellow" position="0 0.1 0.3" scale="0.4 0.1 0.1"></a-box> `;
+        } else {
+            // "Sculpted" Catnap: Quadruped-ish look
             monster.innerHTML = `
-                <a-sphere color="purple" position="0 0.6 0" radius="0.6"></a-sphere>
-                <a-sphere color="purple" position="0 1.3 0" radius="0.4"></a-sphere>
-            `;
+                <a-box color="purple" position="0 0.5 0" scale="0.8 0.6 1.2"></a-box> <a-sphere color="purple" position="0 1.2 0.4" radius="0.4"></a-sphere> <a-box color="purple" position="0.3 0.2 0.4" scale="0.1 0.4 0.1"></a-box> <a-box color="purple" position="-0.3 0.2 0.4" scale="0.1 0.4 0.1"></a-box> <a-cone color="black" position="0 1.5 0.4" radius-bottom="0.05" height="0.3"></a-cone> `;
         }
 
-        // Kill on Right Hand Click
         monster.addEventListener('click', function() {
-          this.setAttribute('animation', 'property: scale; to: 0 0 0; dur: 300');
-          setTimeout(() => this.remove(), 300);
+          this.setAttribute('animation', 'property: scale; to: 0 0 0; dur: 200');
+          setTimeout(() => this.remove(), 200);
         });
 
         container.appendChild(monster);
