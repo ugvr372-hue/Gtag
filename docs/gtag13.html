@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<title>Beyond Sandbox VR</title>
+<title>Huggy Sandbox VR Low RAM</title>
 <script src="https://aframe.io/releases/1.4.2/aframe.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/aframe-extras@6.1.1/dist/aframe-extras.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/aframe-physics-system@4.0.1/dist/aframe-physics-system.min.js"></script>
@@ -30,18 +30,18 @@
 </div>
 
 <a-scene physics="gravity:-9.8" vr-mode-ui="enabled:true" background="color:#222">
-  
+
   <!-- Lights -->
   <a-entity light="type: ambient; intensity: 0.5"></a-entity>
   <a-entity light="type: directional; intensity:0.7; castShadow:true" position="5 10 5"></a-entity>
-  
+
   <!-- Player rig -->
   <a-entity id="rig" position="0 1.6 5" movement-controls="speed:0.15" physics-body="shape:capsule; mass:80">
     <a-camera wasd-controls look-controls></a-camera>
     <a-entity hand-controls="hand: left" physics-body></a-entity>
     <a-entity hand-controls="hand: right" physics-body></a-entity>
   </a-entity>
-  
+
   <!-- Floor and walls -->
   <a-box position="0 -2 0" depth="20" height="0.2" width="20" color="#444" static-body></a-box>
   <a-box position="0 0 -10" depth="0.2" height="4" width="20" color="#888" static-body></a-box>
@@ -49,15 +49,13 @@
   <a-box position="-10 0 0" depth="20" height="4" width="0.2" color="#888" static-body></a-box>
   <a-box position="10 0 0" depth="20" height="4" width="0.2" color="#888" static-body></a-box>
 
-  <!-- Sandbox objects (stackable, interactive) -->
+  <!-- Huggy Wuggy character (low-poly glTF) -->
+  <a-entity id="huggy" gltf-model="https://cdn.jsdelivr.net/gh/PookiePieVR/huggy_lowpoly.glb" position="0 0 -5" scale="0.5 0.5 0.5" dynamic-body></a-entity>
+
+  <!-- GrabPack objects (limited) -->
   <a-box class="sandboxObj" position="1 0 -1" depth="0.5" height="0.5" width="0.5" color="#f00" dynamic-body></a-box>
   <a-box class="sandboxObj" position="-1 0 -2" depth="0.5" height="0.5" width="0.5" color="#0f0" dynamic-body></a-box>
-  <a-box class="sandboxObj" position="2 0 -3" depth="0.5" height="0.5" width="0.5" color="#00f" dynamic-body></a-box>
-  <a-sphere class="sandboxObj" position="0 0 -4" radius="0.25" color="#ff0" dynamic-body></a-sphere>
-  <a-cylinder class="sandboxObj" position="3 0 -2" radius="0.2" height="0.5" color="#0ff" dynamic-body></a-cylinder>
-
-  <!-- Huggy Wuggy -->
-  <a-box id="huggy" position="0 0 -5" depth="0.5" height="2" width="0.5" color="#ff69b4" dynamic-body></a-box>
+  <a-sphere class="sandboxObj" position="2 0 -3" radius="0.25" color="#ff0" dynamic-body></a-sphere>
 
   <script>
     let huggyCombat = false;
@@ -68,16 +66,16 @@
       alert("Huggy Combat: " + (huggyCombat ? "ON" : "OFF"));
     }
 
-    // Huggy AI
+    // Optimized Huggy AI
     AFRAME.registerComponent('huggy-ai', {
-      tick: function(time, delta){
+      tick: function(){
         if(huggyCombat){
           const rigPos = document.getElementById('rig').getAttribute('position');
           const huggyPos = huggy.getAttribute('position');
           huggy.setAttribute('position',{
-            x: huggyPos.x + (rigPos.x - huggyPos.x) * 0.005,
+            x: huggyPos.x + (rigPos.x - huggyPos.x) * 0.004,
             y: huggyPos.y,
-            z: huggyPos.z + (rigPos.z - huggyPos.z) * 0.005
+            z: huggyPos.z + (rigPos.z - huggyPos.z) * 0.004
           });
         }
       }
@@ -100,6 +98,7 @@
       });
     });
   </script>
+
 </a-scene>
 
 </body>
