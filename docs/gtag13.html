@@ -1,127 +1,108 @@
 <!DOCTYPE html>
 <html>
   <head>
-    <title>Monke Sandbox: Legless Edition</title>
+    <title>Monke Sandbox - Pro Platforms</title>
     <script src="https://aframe.io/releases/1.4.2/aframe.min.js"></script>
     <script src="https://cdn.jsdelivr.net/gh/c-frame/aframe-extras@7.2.0/dist/aframe-extras.min.js"></script>
     <script src="https://unpkg.com/aframe-environment-component@1.3.2/dist/aframe-environment-component.min.js"></script>
     <script src="https://cdn.jsdelivr.net/gh/n5ro/aframe-physics-system@v4.0.1/dist/aframe-physics-system.min.js"></script>
   </head>
   <body>
-    <a-scene physics="debug: false; gravity: -9.8; iterations: 10">
+    <a-scene physics="debug: false; gravity: -9.8; iterations: 30">
       
       <a-assets>
-        <a-asset-item id="hand-model" src="https://vazxmixjsiawhamurptx.supabase.co/storage/v1/object/public/models/hand-left/model.gltf"></a-asset-item>
+        <a-asset-item id="hand-l" src="https://vazxmixjsiawhamurptx.supabase.co/storage/v1/object/public/models/hand-left/model.gltf"></a-asset-item>
+        <a-asset-item id="hand-r" src="https://vazxmixjsiawhamurptx.supabase.co/storage/v1/object/public/models/hand-right/model.gltf"></a-asset-item>
       </a-assets>
 
-      <a-entity environment="preset: osiris; ground: hills; dressingAmount: 40" static-body></a-entity>
+      <a-entity environment="preset: osiris; ground: hills; dressingAmount: 30"></a-entity>
+      <a-plane static-body position="0 0 0" rotation="-90 0 0" width="100" height="100" visible="false"></a-plane>
 
-      <a-entity id="rig" movement-controls="fly: false; speed: 0" dynamic-body="shape: sphere; sphereRadius: 0.3; mass: 5; linearDamping: 0.5">
-        
+      <a-entity id="rig" movement-controls="fly: false; speed: 0" dynamic-body="shape: sphere; sphereRadius: 0.3; mass: 5">
         <a-entity camera id="head" position="0 0.6 0" look-controls>
             <a-box color="#222" scale="0.2 0.1 0.15" position="0 0 -0.05"></a-box>
-            <a-sphere color="#5a3d2b" radius="0.3" position="0 -0.3 0"></a-sphere>
-        </a-entity>
+            <a-sphere color="#5a3d2b" radius="0.3" position="0 -0.3 0" visible="false"></a-sphere>
+        </a-camera>
         
         <a-entity id="left-hand" oculus-touch-controls="hand: left">
-            <a-sphere radius="0.1" color="#5a3d2b" static-body></a-sphere>
+            <a-gltf-model src="#hand-l" scale="1.5 1.5 1.5" static-body="shape: box"></a-gltf-model>
+            <a-box id="plat-l" visible="false" static-body position="0 -0.1 0" scale="0.5 0.05 0.5" color="#555" opacity="0.7"></a-box>
             
-            <a-entity id="mod-menu" position="0 0.1 0" rotation="-90 0 0" visible="false">
-                <a-plane color="#111" height="0.5" width="0.3">
-                    <a-text value="MONKE MODS" align="center" position="0 0.2 0.01" scale="0.1 0.1 0.1"></a-text>
-                    <a-plane class="menu-btn" color="blue" position="0 0.1 0.02" width="0.25" height="0.06" onclick="setMode('huggy')"><a-text value="Huggy Gun" align="center" scale="0.08 0.08 0.08"></a-text></a-plane>
-                    <a-plane class="menu-btn" color="green" position="0 0.02 0.02" width="0.25" height="0.06" onclick="toggleFly()"><a-text id="fly-text" value="Fly: OFF" align="center" scale="0.08 0.08 0.08"></a-text></a-plane>
-                    <a-plane class="menu-btn" color="orange" position="0 -0.06 0.02" width="0.25" height="0.06" onclick="setMode('platform')"><a-text value="Platforms" align="center" scale="0.08 0.08 0.08"></a-text></a-plane>
-                    <a-plane class="menu-btn" color="red" position="0 -0.14 0.02" width="0.25" height="0.06" onclick="location.reload()"><a-text value="Restart" align="center" scale="0.08 0.08 0.08"></a-text></a-plane>
+            <a-entity id="mod-menu" position="0 0.1 0.05" rotation="-90 0 0" visible="false">
+                <a-plane color="#000" height="0.4" width="0.25">
+                    <a-text value="MONKE MODS" align="center" position="0 0.15 0.01" scale="0.1 0.1 0.1"></a-text>
+                    <a-plane class="menu-btn" color="blue" position="0 0.05 0.02" width="0.2" height="0.05" onclick="spawnEntity('huggy')"><a-text value="Spawn Huggy" align="center" scale="0.08 0.08 0.08"></a-text></a-plane>
+                    <a-plane class="menu-btn" color="green" position="0 -0.05 0.02" width="0.2" height="0.05" onclick="toggleFly()"><a-text id="fly-txt" value="Fly: OFF" align="center" scale="0.08 0.08 0.08"></a-text></a-plane>
                 </a-plane>
             </a-entity>
         </a-entity>
 
-        <a-entity id="right-hand" oculus-touch-controls="hand: right" laser-controls="hand: right" raycaster="objects: .menu-btn, .environmentGround; far: 30">
-            <a-sphere radius="0.1" color="#5a3d2b" static-body></a-sphere>
-            <a-cylinder id="gun-tip" position="0 0 -0.1" rotation="90 0 0" radius="0.01" height="0.2" color="blue"></a-cylinder>
+        <a-entity id="right-hand" oculus-touch-controls="hand: right" laser-controls="hand: right" raycaster="objects: .menu-btn; far: 5">
+            <a-gltf-model src="#hand-r" scale="1.5 1.5 1.5" static-body="shape: box"></a-gltf-model>
+            <a-box id="plat-r" visible="false" static-body position="0 -0.1 0" scale="0.5 0.05 0.5" color="#555" opacity="0.7"></a-box>
         </a-entity>
       </a-entity>
 
-      <a-entity id="world-objects"></a-entity>
+      <a-entity id="world"></a-entity>
 
     </a-scene>
 
     <script>
-      let mode = 'huggy';
       let isFlying = false;
 
-      // Toggle Menu
+      // Menu Toggle (X)
       document.querySelector('#left-hand').addEventListener('xbuttondown', () => {
           const m = document.querySelector('#mod-menu');
           m.setAttribute('visible', !m.getAttribute('visible'));
       });
 
-      function setMode(m) {
-          mode = m;
-          document.querySelector('#gun-tip').setAttribute('color', m === 'huggy' ? 'blue' : 'orange');
+      // REAL G-TAG PLATFORMS (Hold Grip)
+      function setupPlat(handID, platID) {
+          const hand = document.querySelector(handID);
+          const plat = document.querySelector(platID);
+
+          hand.addEventListener('gripdown', () => {
+              plat.setAttribute('visible', true);
+              // Teleport platform to current hand position
+              const handPos = hand.object3D.getWorldPosition(new THREE.Vector3());
+              plat.setAttribute('position', {x: 0, y: -0.1, z: 0}); 
+              plat.setAttribute('static-body', ''); // Reset physics
+          });
+
+          hand.addEventListener('gripup', () => {
+              plat.setAttribute('visible', false);
+              plat.removeAttribute('static-body'); // Remove collision when not in use
+          });
       }
+
+      setupPlat('#left-hand', '#plat-l');
+      setupPlat('#right-hand', '#plat-r');
 
       function toggleFly() {
           isFlying = !isFlying;
           const rig = document.querySelector('#rig');
-          const txt = document.querySelector('#fly-text');
-          if(isFlying) {
-              rig.setAttribute('movement-controls', 'fly: true; speed: 0.3');
-              rig.body.mass = 0; // Anti-gravity
-              txt.setAttribute('value', 'Fly: ON');
-          } else {
-              rig.setAttribute('movement-controls', 'fly: false; speed: 0');
-              rig.body.mass = 5;
-              txt.setAttribute('value', 'Fly: OFF');
-          }
+          rig.setAttribute('movement-controls', isFlying ? 'fly: true; speed: 0.3' : 'fly: false; speed: 0');
+          rig.body.mass = isFlying ? 0 : 5;
+          document.querySelector('#fly-txt').setAttribute('value', `Fly: ${isFlying ? 'ON' : 'OFF'}`);
       }
 
-      // GUN LOGIC
-      document.querySelector('#right-hand').addEventListener('triggerdown', function() {
-          const ray = this.components.raycaster;
-          const hit = ray.getIntersection(document.querySelector('.environmentGround'));
-          if (!hit) return;
-
-          if (mode === 'platform') {
-              const p = document.createElement('a-box');
-              p.setAttribute('position', hit.point);
-              p.setAttribute('scale', '2 0.2 2');
-              p.setAttribute('static-body', '');
-              p.setAttribute('color', '#444');
-              document.querySelector('#world-objects').appendChild(p);
-          } else {
-              spawnRagdoll(hit.point);
-          }
-      });
-
-      function spawnRagdoll(pos) {
-          const root = document.querySelector('#world-objects');
-          const container = document.createElement('a-entity');
-          container.setAttribute('position', {x: pos.x, y: pos.y + 2, z: pos.z});
-
-          // RAGDOLL ENTITY (Physics-enabled parts)
-          container.innerHTML = `
-            <a-box color="blue" scale="0.4 0.8 0.3" dynamic-body="mass: 1"></a-box>
-            <a-sphere color="blue" position="0 0.6 0" radius="0.2" dynamic-body="mass: 0.5"></a-sphere>
-            <a-cylinder color="blue" position="0.3 0 0" radius="0.05" height="0.8" dynamic-body="mass: 0.2"></a-cylinder>
-            <a-cylinder color="blue" position="-0.3 0 0" radius="0.05" height="0.8" dynamic-body="mass: 0.2"></a-cylinder>
-          `;
-          root.appendChild(container);
-      }
-
-      // LOCOMOTION PHYSICS (Hand Slap)
-      // This detects collisions between your hands and the ground to push you
+      // Physics Pushing (Slapping the ground)
       document.querySelectorAll('#left-hand, #right-hand').forEach(hand => {
-          hand.addEventListener('collide', function(e) {
-              const rig = document.querySelector('#rig');
+          hand.addEventListener('collide', (e) => {
               if (!isFlying) {
-                  // Apply force upwards and slightly forward based on where you look
-                  const force = new CANNON.Vec3(0, 8, 0); 
-                  rig.body.applyImpulse(force, rig.body.position);
+                  const rig = document.querySelector('#rig');
+                  rig.body.applyImpulse(new CANNON.Vec3(0, 7, 0), rig.body.position);
               }
           });
       });
+
+      function spawnEntity(type) {
+          const m = document.createElement('a-entity');
+          m.setAttribute('position', {x: (Math.random()-0.5)*5, y: 2, z: -3});
+          m.innerHTML = `<a-box color="blue" scale="0.4 1 0.3" dynamic-body="mass:1"></a-box>
+                         <a-sphere color="blue" position="0 0.8 0" radius="0.25" dynamic-body="mass:0.5"></a-sphere>`;
+          document.querySelector('#world').appendChild(m);
+      }
     </script>
   </body>
 </html>
