@@ -8,54 +8,9 @@
   <script src="https://cdn.jsdelivr.net/npm/aframe-extras@6.1.1/dist/aframe-extras.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/cannon-es@0.20.0/dist/cannon-es.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/aframe-physics-system@4.0.1/dist/aframe-physics-system.min.js"></script>
-  <style>
-    #startMenu {
-      position: absolute;
-      top: 40%;
-      left: 35%;
-      width: 30%;
-      background: #111;
-      color: #0f0;
-      font-family: monospace;
-      padding: 20px;
-      border: 2px solid #0f0;
-      z-index: 9999;
-    }
-    #modMenu {
-      position: absolute;
-      top: 10%;
-      left: 10%;
-      width: 80%;
-      background: rgba(0,0,0,0.9);
-      color: #ff0;
-      font-family: monospace;
-      padding: 20px;
-      border: 2px solid #ff0;
-      display: none;
-      z-index: 9999;
-    }
-  </style>
 </head>
 <body>
-  <!-- START MENU -->
-  <div id="startMenu">
-    <h2>VR Prison Escape</h2>
-    <p>Enter secret code for mods or press Start to play:</p>
-    <input type="text" id="codeInput" placeholder="Enter code here">
-    <button id="startBtn">Start</button>
-  </div>
-
-  <!-- MOD MENU -->
-  <div id="modMenu">
-    <h2>MOD MENU UNLOCKED</h2>
-    <button onclick="spawnItem('spoon')">Spawn Spoon</button>
-    <button onclick="spawnItem('key')">Spawn Key</button>
-    <button onclick="freezeGuards()">Freeze Guards</button>
-    <button onclick="toggleInvincibility()">Toggle Invincibility</button>
-  </div>
-
-  <!-- VR SCENE -->
-  <a-scene physics="gravity:-9.8" vr-mode-ui="enabled: true" background="color: #222">
+  <a-scene physics="gravity:-9.8" vr-mode-ui="enabled:true" background="color:#222" loading-screen="enabled:false">
     <!-- Lights -->
     <a-entity light="type: ambient; intensity: 0.5"></a-entity>
     <a-entity light="type: directional; intensity: 0.6; castShadow:true" position="5 10 5"></a-entity>
@@ -94,40 +49,38 @@
     <a-entity id="blood" particle-system="preset:dust; color:red; particleCount:0;"></a-entity>
 
     <script>
-      // START MENU
-      const startMenu = document.getElementById('startMenu');
-      const modMenu = document.getElementById('modMenu');
-      const startBtn = document.getElementById('startBtn');
-      const codeInput = document.getElementById('codeInput');
-      let invincible = false;
-      let guardsFrozen = false;
-
-      startBtn.addEventListener('click', () => {
-        if(codeInput.value === 'VRPRISON1337'){
-          modMenu.style.display = 'block';
+      AFRAME.registerComponent('dig-spoon', {
+        init: function(){
+          const wall = document.querySelector("#diggableWall");
+          const blood = document.querySelector("#blood");
+          let digProgress = 0;
+          this.el.addEventListener('click', () => {
+            digProgress += 0.1;
+            blood.setAttribute('particle-system','particleCount',digProgress*50);
+            wall.setAttribute('color',`rgb(${170-digProgress*100},${170-digProgress*100},${170-digProgress*100})`);
+            if(digProgress>=1){
+              console.log("Hole dug! Cover with painting!");
+            }
+          });
         }
-        startMenu.style.display = 'none';
       });
 
-      // Spoon digging
-      const wall = document.querySelector("#diggableWall");
-      const spoon = document.querySelector("#spoon");
-      let digProgress = 0;
-      spoon.addEventListener('click', () => {
-        digProgress += 0.1;
-        document.querySelector("#blood").setAttribute('particle-system','particleCount',digProgress*50);
-        wall.setAttribute('color',`rgb(${170-digProgress*100},${170-digProgress*100},${170-digProgress*100})`);
-        if(digProgress>=1) console.log("Hole dug! Cover with painting!");
-      });
+      // Attach dig component to spoon
+      document.querySelector("#spoon").setAttribute('dig-spoon','');
 
       // Guard AI
       const guard = document.querySelector("#guard");
+      const painting = document.querySelector("#painting");
+      let diggableWall = document.querySelector("#diggableWall");
+      let invincible = false;
+      let guardsFrozen = false;
+
       setInterval(()=>{
         if(!guardsFrozen){
           guard.setAttribute("position",{x:-2,y:0,z:-5});
           setTimeout(()=>{
-            if(digProgress>0.3 && document.querySelector("#painting").getAttribute("position").z < -5){
-              if(!invincible){
+            if(diggableWall && diggableWall.getAttribute('color')!="#aaa"){
+              if(painting.getAttribute("position").z < -5 && !invincible){
                 alert("Caught! Restarting scene...");
                 window.location.reload();
               }
@@ -151,33 +104,6 @@
           npc.setAttribute("color","#800");
         });
       });
-
-      // MOD MENU
-      function spawnItem(type){
-        const scene = document.querySelector('a-scene');
-        let item;
-        if(type==='spoon'){
-          item = document.createElement('a-box');
-          item.setAttribute('position','2 0 -3');
-          item.setAttribute('depth','0.1');
-          item.setAttribute('height','0.1');
-          item.setAttribute('width','0.5');
-          item.setAttribute('color','#ccc');
-          item.setAttribute('grabbable','');
-        }
-        if(type==='key'){
-          item = document.createElement('a-box');
-          item.setAttribute('position','-2 0 -3');
-          item.setAttribute('depth','0.1');
-          item.setAttribute('height','0.1');
-          item.setAttribute('width','0.3');
-          item.setAttribute('color','#ff0');
-          item.setAttribute('grabbable','');
-        }
-        scene.appendChild(item);
-      }
-      function freezeGuards(){ guardsFrozen=!guardsFrozen; }
-      function toggleInvincibility(){ invincible=!invincible; alert("Invincible: "+invincible);}
     </script>
   </a-scene>
 </body>
