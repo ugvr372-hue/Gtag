@@ -1,98 +1,125 @@
 <!DOCTYPE html>
 <html>
   <head>
-    <title>BEYOND | Browser Sandbox</title>
+    <title>BEYOND | High-Fidelity Sandbox</title>
     <script src="https://aframe.io/releases/1.4.2/aframe.min.js"></script>
     <script src="https://cdn.jsdelivr.net/gh/c-frame/aframe-extras@7.2.0/dist/aframe-extras.min.js"></script>
     <script src="https://cdn.jsdelivr.net/gh/n5ro/aframe-physics-system@v4.0.1/dist/aframe-physics-system.min.js"></script>
-    <script src="https://unpkg.com/aframe-environment-component@1.3.2/dist/aframe-environment-component.min.js"></script>
+    <script src="https://unpkg.com/aframe-particle-system-component@1.1.3/dist/aframe-particle-system-component.min.js"></script>
   </head>
   <body>
-    <a-scene physics="gravity: -12; iterations: 40">
+    <a-scene physics="debug: false; gravity: -9.8; iterations: 50">
       
       <a-assets>
-          <a-asset-item id="hand-l" src="https://vazxmixjsiawhamurptx.supabase.co/storage/v1/object/public/models/hand-left/model.gltf"></a-asset-item>
-          <a-asset-item id="hand-r" src="https://vazxmixjsiawhamurptx.supabase.co/storage/v1/object/public/models/hand-right/model.gltf"></a-asset-item>
+        <a-asset-item id="hand-l" src="https://vazxmixjsiawhamurptx.supabase.co/storage/v1/object/public/models/hand-left/model.gltf"></a-asset-item>
+        <a-asset-item id="hand-r" src="https://vazxmixjsiawhamurptx.supabase.co/storage/v1/object/public/models/hand-right/model.gltf"></a-asset-item>
       </a-assets>
 
-      <a-entity environment="preset: forest; lighting: point; groundColor: #111; dressingAmount: 15"></a-entity>
-      <a-box static-body position="0 -5 0" width="300" height="10" depth="300" visible="false"></a-box>
+      <a-sky color="#1a1a1a"></a-sky>
+      <a-light type="ambient" intensity="0.3"></a-light>
+      <a-light type="directional" position="1 1 1" intensity="0.8"></a-light>
 
-      <a-entity id="rig" dynamic-body="shape: sphere; sphereRadius: 0.4; mass: 10">
-        <a-entity camera look-controls position="0 0.6 0">
-            <a-box color="#111" scale="0.2 0.1 0.15" position="0 0 -0.05"></a-box>
-        </a-entity>
+      <a-plane static-body position="0 0 0" rotation="-90 0 0" width="100" height="100" color="#222"></a-plane>
+
+      <a-entity id="rig" movement-controls="fly: false; speed: 0.15" kinematic-body>
+        <a-entity camera position="0 1.6 0" look-controls>
+            <a-box color="#050505" scale="0.2 0.1 0.15" position="0 0 -0.05"></a-box>
+            <a-cylinder id="player-body" color="#333" radius="0.25" height="1.6" position="0 -0.8 0" visible="false"></a-cylinder>
+        </a-camera>
 
         <a-entity id="left-hand" oculus-touch-controls="hand: left">
-            <a-gltf-model src="#hand-l" scale="1.6 1.6 1.6" static-body="shape: sphere; sphereRadius: 0.1"></a-gltf-model>
+            <a-gltf-model src="#hand-l" scale="1.4 1.4 1.4"></a-gltf-model>
             
-            <a-entity id="beyond-menu" position="0 0.12 0.05" rotation="-90 0 0" visible="false">
-                <a-plane color="#0a0a0a" height="0.6" width="0.4" opacity="0.9">
-                    <a-text value="BEYOND v1.0" align="center" position="0 0.25 0.01" scale="0.15 0.15 0.15" color="#00ffcc"></a-text>
+            <a-entity id="mod-menu" position="0 0.1 0.05" rotation="-45 0 0" visible="false">
+                <a-plane color="#000" height="0.5" width="0.35" opacity="0.9">
+                    <a-text value="BEYOND v1.0" align="center" position="0 0.2 0.01" scale="0.12 0.12 0.12" color="#ff0000"></a-text>
                     
-                    <a-plane class="menu-btn" color="#222" position="-0.1 -0.2 0.01" width="0.15" height="0.06" onclick="setCategory('entities')"><a-text value="ENTITIES" align="center" scale="0.08 0.08 0.08"></a-text></a-plane>
-                    <a-plane class="menu-btn" color="#222" position="0.1 -0.2 0.01" width="0.15" height="0.06" onclick="setCategory('tools')"><a-text value="TOOLS" align="center" scale="0.08 0.08 0.08"></a-text></a-plane>
+                    <a-plane class="menu-btn" color="#222" position="0 0.08 0.02" width="0.3" height="0.06" onclick="spawnEntity('ragdoll')">
+                        <a-text value="Spawn NPC" align="center" scale="0.08 0.08 0.08" color="#fff"></a-text>
+                    </a-plane>
+                    
+                    <a-plane class="menu-btn" color="#222" position="0 0 0.02" width="0.3" height="0.06" onclick="setMode('glock')">
+                        <a-text id="mode-text" value="Mode: Glock" align="center" scale="0.08 0.08 0.08" color="#fff"></a-text>
+                    </a-plane>
 
-                    <a-entity id="menu-items">
-                        <a-plane class="menu-btn" color="#333" position="0 0.1 0.01" width="0.35" height="0.08" onclick="spawn('npc')"><a-text value="Spawn NPC" align="center" scale="0.1 0.1 0.1"></a-text></a-plane>
-                        <a-plane class="menu-btn" color="#333" position="0 0 0.01" width="0.35" height="0.08" onclick="spawn('box')"><a-text value="Spawn Prop" align="center" scale="0.1 0.1 0.1"></a-text></a-plane>
-                        <a-plane class="menu-btn" color="#333" position="0 -0.1 0.01" width="0.35" height="0.08" onclick="toggleFly()"><a-text id="fly-status" value="Fly: OFF" align="center" scale="0.1 0.1 0.1"></a-text></a-plane>
-                    </a-entity>
+                    <a-plane class="menu-btn" color="#b00" position="0 -0.15 0.02" width="0.3" height="0.06" onclick="location.reload()">
+                        <a-text value="Reset Scene" align="center" scale="0.08 0.08 0.08" color="#fff"></a-text>
+                    </a-plane>
                 </a-plane>
             </a-entity>
         </a-entity>
 
-        <a-entity id="right-hand" oculus-touch-controls="hand: right" laser-controls="hand: right" raycaster="objects: .menu-btn, .environmentGround; far: 50">
-            <a-gltf-model src="#hand-r" scale="1.6 1.6 1.6" static-body="shape: sphere; sphereRadius: 0.1"></a-gltf-model>
-            <a-sphere id="aim-dot" position="0 0 -0.1" radius="0.01" color="#00ffcc"></a-sphere>
+        <a-entity id="right-hand" oculus-touch-controls="hand: right" laser-controls="hand: right" raycaster="objects: .menu-btn, .npc-body; far: 50">
+            <a-gltf-model src="#hand-r" scale="1.4 1.4 1.4"></a-gltf-model>
+            <a-box id="weapon-vis" color="#111" scale="0.03 0.08 0.2" position="0 0 -0.15"></a-box>
         </a-entity>
       </a-entity>
 
-      <a-entity id="sandbox-world"></a-entity>
+      <a-entity id="world"></a-entity>
 
     </a-scene>
 
     <script>
-      let isFlying = false;
+      let currentMode = 'glock';
 
-      // Menu Toggle
+      // Toggle Menu
       document.querySelector('#left-hand').addEventListener('xbuttondown', () => {
-          const m = document.querySelector('#beyond-menu');
-          m.setAttribute('visible', !m.getAttribute('visible'));
+          const menu = document.querySelector('#mod-menu');
+          menu.setAttribute('visible', !menu.getAttribute('visible'));
       });
 
-      // Spawning Logic
-      function spawn(type) {
-          const hit = document.querySelector('#right-hand').components.raycaster.getIntersection(document.querySelector('.environmentGround'));
-          if (!hit) return;
+      function setMode(m) {
+          currentMode = m;
+          document.querySelector('#mode-text').setAttribute('value', `Mode: ${m.toUpperCase()}`);
+      }
+
+      // Beyond Shooting & Gore Logic
+      document.querySelector('#right-hand').addEventListener('triggerdown', function() {
+          const ray = this.components.raycaster;
+          const hit = ray.getIntersection(document.querySelector('.npc-body'));
           
-          const el = document.createElement('a-entity');
-          el.setAttribute('position', hit.point);
-          if (type === 'npc') {
-              el.innerHTML = `<a-box color="red" scale="0.5 1.5 0.3" dynamic-body></a-box><a-sphere color="white" position="0 1 0" radius="0.25" dynamic-body></a-sphere>`;
-          } else {
-              el.setAttribute('geometry', 'primitive: box');
-              el.setAttribute('material', 'color: #777');
-              el.setAttribute('dynamic-body', 'mass: 2');
+          // Muzzle Flash Effect
+          const flash = document.createElement('a-light');
+          flash.setAttribute('type', 'point');
+          flash.setAttribute('intensity', '2');
+          flash.setAttribute('color', 'orange');
+          flash.setAttribute('position', this.object3D.position);
+          document.querySelector('a-scene').appendChild(flash);
+          setTimeout(() => flash.remove(), 50);
+
+          if (hit) {
+              triggerGore(hit.point, hit.el);
           }
-          document.querySelector('#sandbox-world').appendChild(el);
-      }
-
-      function toggleFly() {
-          isFlying = !isFlying;
-          const rig = document.querySelector('#rig');
-          rig.setAttribute('movement-controls', isFlying ? 'fly: true; speed: 0.4' : 'fly: false; speed: 0');
-          rig.body.mass = isFlying ? 0 : 10;
-          document.querySelector('#fly-status').setAttribute('value', `Fly: ${isFlying ? 'ON' : 'OFF'}`);
-      }
-
-      // Locomotion (Slap)
-      document.querySelectorAll('#left-hand, #right-hand').forEach(h => {
-          h.addEventListener('collide', () => {
-              if (isFlying) return;
-              document.querySelector('#rig').body.applyImpulse(new CANNON.Vec3(0, 10, 0), new CANNON.Vec3().copy(document.querySelector('#rig').object3D.position));
-          });
       });
+
+      function triggerGore(pos, target) {
+          // 1. Blood Splatter (Particles)
+          const blood = document.createElement('a-entity');
+          blood.setAttribute('position', pos);
+          blood.setAttribute('particle-system', 'color: #800; size: 0.1; particleCount: 50; duration: 0.2; velocityValue: 0 2 0');
+          document.querySelector('a-scene').appendChild(blood);
+          setTimeout(() => blood.remove(), 1000);
+
+          // 2. Beyond Physics Reaction (Pushing the Ragdoll)
+          const force = new CANNON.Vec3(0, 5, -10);
+          if (target.body) {
+              target.body.applyImpulse(force, new CANNON.Vec3().copy(pos));
+          }
+      }
+
+      function spawnEntity(type) {
+          const npc = document.createElement('a-entity');
+          npc.setAttribute('position', {x: (Math.random()-0.5)*10, y: 1, z: -5});
+          
+          // Realistic Ragdoll Pieces
+          npc.innerHTML = `
+            <a-box class="npc-body" color="#555" scale="0.4 0.9 0.3" dynamic-body="mass: 5"></a-box>
+            <a-sphere class="npc-body" color="#d2b48c" position="0 0.6 0" radius="0.2" dynamic-body="mass: 1"></a-sphere>
+            <a-cylinder class="npc-body" color="#555" position="0.3 0 0" radius="0.05" height="0.8" dynamic-body="mass: 0.5"></a-cylinder>
+            <a-cylinder class="npc-body" color="#555" position="-0.3 0 0" radius="0.05" height="0.8" dynamic-body="mass: 0.5"></a-cylinder>
+          `;
+          document.querySelector('#world').appendChild(npc);
+      }
     </script>
   </body>
 </html>
