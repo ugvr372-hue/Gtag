@@ -1,107 +1,123 @@
 <!DOCTYPE html>
 <html>
   <head>
-    <title>Monke Sandbox - Pro Platforms</title>
+    <title>Monke Sandbox - Branching Edition</title>
     <script src="https://aframe.io/releases/1.4.2/aframe.min.js"></script>
     <script src="https://cdn.jsdelivr.net/gh/c-frame/aframe-extras@7.2.0/dist/aframe-extras.min.js"></script>
     <script src="https://unpkg.com/aframe-environment-component@1.3.2/dist/aframe-environment-component.min.js"></script>
     <script src="https://cdn.jsdelivr.net/gh/n5ro/aframe-physics-system@v4.0.1/dist/aframe-physics-system.min.js"></script>
   </head>
   <body>
-    <a-scene physics="debug: false; gravity: -9.8; iterations: 30">
+    <a-scene physics="debug: false; gravity: -12; iterations: 50">
       
       <a-assets>
         <a-asset-item id="hand-l" src="https://vazxmixjsiawhamurptx.supabase.co/storage/v1/object/public/models/hand-left/model.gltf"></a-asset-item>
         <a-asset-item id="hand-r" src="https://vazxmixjsiawhamurptx.supabase.co/storage/v1/object/public/models/hand-right/model.gltf"></a-asset-item>
       </a-assets>
 
-      <a-entity environment="preset: osiris; ground: hills; dressingAmount: 30"></a-entity>
-      <a-plane static-body position="0 0 0" rotation="-90 0 0" width="100" height="100" visible="false"></a-plane>
+      <a-light id="sun" type="directional" position="1 1 1" intensity="1"></a-light>
+      <a-sky id="sky" color="#87CEEB"></a-sky>
 
-      <a-entity id="rig" movement-controls="fly: false; speed: 0" dynamic-body="shape: sphere; sphereRadius: 0.3; mass: 5">
-        <a-entity camera id="head" position="0 0.6 0" look-controls>
+      <a-box id="floor" static-body position="0 -5 0" width="200" height="10" depth="200" visible="false"></a-box>
+      
+      <a-entity environment="preset: forest; ground: hills; dressingAmount: 0; skyType: none; lighting: none"></a-entity>
+
+      <a-entity id="forest-branches">
+        <a-entity position="-5 0 -10">
+            <a-cylinder color="#5C4033" radius="0.8" height="15" static-body></a-cylinder> <a-box color="#3e2723" position="2 6 0" rotation="0 0 15" scale="4 0.3 1" static-body></a-box> <a-box color="#3e2723" position="-2 9 0" rotation="0 0 -15" scale="4 0.3 1" static-body></a-box> </a-entity>
+        <a-entity position="8 0 -15">
+            <a-cylinder color="#5C4033" radius="1" height="20" static-body></a-cylinder>
+            <a-box color="#3e2723" position="0 10 2.5" rotation="15 0 0" scale="1 0.3 5" static-body></a-box>
+            <a-box color="#3e2723" position="0 14 -2.5" rotation="-15 0 0" scale="1 0.3 5" static-body></a-box>
+        </a-entity>
+      </a-entity>
+
+      <a-entity id="rig" dynamic-body="shape: sphere; sphereRadius: 0.4; mass: 10; linearDamping: 0.5">
+        <a-entity camera id="head" position="0 0.5 0" look-controls>
             <a-box color="#222" scale="0.2 0.1 0.15" position="0 0 -0.05"></a-box>
-            <a-sphere color="#5a3d2b" radius="0.3" position="0 -0.3 0" visible="false"></a-sphere>
         </a-camera>
         
         <a-entity id="left-hand" oculus-touch-controls="hand: left">
-            <a-gltf-model src="#hand-l" scale="1.5 1.5 1.5" static-body="shape: box"></a-gltf-model>
-            <a-box id="plat-l" visible="false" static-body position="0 -0.1 0" scale="0.5 0.05 0.5" color="#555" opacity="0.7"></a-box>
-            
-            <a-entity id="mod-menu" position="0 0.1 0.05" rotation="-90 0 0" visible="false">
-                <a-plane color="#000" height="0.4" width="0.25">
-                    <a-text value="MONKE MODS" align="center" position="0 0.15 0.01" scale="0.1 0.1 0.1"></a-text>
-                    <a-plane class="menu-btn" color="blue" position="0 0.05 0.02" width="0.2" height="0.05" onclick="spawnEntity('huggy')"><a-text value="Spawn Huggy" align="center" scale="0.08 0.08 0.08"></a-text></a-plane>
-                    <a-plane class="menu-btn" color="green" position="0 -0.05 0.02" width="0.2" height="0.05" onclick="toggleFly()"><a-text id="fly-txt" value="Fly: OFF" align="center" scale="0.08 0.08 0.08"></a-text></a-plane>
+            <a-gltf-model src="#hand-l" scale="1.6 1.6 1.6" static-body="shape: sphere; sphereRadius: 0.15"></a-gltf-model>
+            <a-box id="plat-l" visible="false" scale="0.6 0.06 0.6" color="#555" opacity="0.8"></a-box>
+            <a-entity id="mod-menu" position="0 0.12 0.05" rotation="-90 0 0" visible="false">
+                <a-plane color="#111" height="0.4" width="0.25">
+                    <a-text value="MONKE MENU" align="center" position="0 0.15 0.01" scale="0.1 0.1 0.1"></a-text>
+                    <a-plane class="menu-btn" color="#00ff00" position="0 0 0.02" width="0.2" height="0.05" onclick="toggleFly()"><a-text id="fly-txt" value="Fly: OFF" align="center" scale="0.08 0.08 0.08"></a-text></a-plane>
+                    <a-plane class="menu-btn" color="red" position="0 -0.1 0.02" width="0.2" height="0.05" onclick="location.reload()"><a-text value="Reset" align="center" scale="0.08 0.08 0.08"></a-text></a-plane>
                 </a-plane>
             </a-entity>
         </a-entity>
 
         <a-entity id="right-hand" oculus-touch-controls="hand: right" laser-controls="hand: right" raycaster="objects: .menu-btn; far: 5">
-            <a-gltf-model src="#hand-r" scale="1.5 1.5 1.5" static-body="shape: box"></a-gltf-model>
-            <a-box id="plat-r" visible="false" static-body position="0 -0.1 0" scale="0.5 0.05 0.5" color="#555" opacity="0.7"></a-box>
+            <a-gltf-model src="#hand-r" scale="1.6 1.6 1.6" static-body="shape: sphere; sphereRadius: 0.15"></a-gltf-model>
+            <a-box id="plat-r" visible="false" scale="0.6 0.06 0.6" color="#555" opacity="0.8"></a-box>
         </a-entity>
       </a-entity>
-
-      <a-entity id="world"></a-entity>
 
     </a-scene>
 
     <script>
       let isFlying = false;
+      let time = 0;
 
-      // Menu Toggle (X)
+      // Day/Night Cycle Logic
+      function updateTime() {
+          time += 0.001; // Increase speed to change time faster
+          const sky = document.querySelector('#sky');
+          const sun = document.querySelector('#sun');
+          
+          // Smoothly cycle sky color from blue to dark purple
+          const lerp = (Math.sin(time) + 1) / 2; 
+          const r = Math.floor(135 * lerp);
+          const g = Math.floor(206 * lerp);
+          const b = Math.floor(235 * lerp + 20);
+          
+          sky.setAttribute('color', `rgb(${r},${g},${b})`);
+          sun.setAttribute('intensity', lerp); // Dim sun at night
+          
+          requestAnimationFrame(updateTime);
+      }
+      updateTime();
+
+      // Menu Toggle (X button)
       document.querySelector('#left-hand').addEventListener('xbuttondown', () => {
           const m = document.querySelector('#mod-menu');
           m.setAttribute('visible', !m.getAttribute('visible'));
       });
 
-      // REAL G-TAG PLATFORMS (Hold Grip)
+      // PLATFORMS (Grip Down)
       function setupPlat(handID, platID) {
           const hand = document.querySelector(handID);
           const plat = document.querySelector(platID);
-
           hand.addEventListener('gripdown', () => {
               plat.setAttribute('visible', true);
-              // Teleport platform to current hand position
-              const handPos = hand.object3D.getWorldPosition(new THREE.Vector3());
-              plat.setAttribute('position', {x: 0, y: -0.1, z: 0}); 
-              plat.setAttribute('static-body', ''); // Reset physics
+              plat.setAttribute('static-body', '');
+              plat.setAttribute('position', {x: 0, y: -0.15, z: 0});
           });
-
           hand.addEventListener('gripup', () => {
               plat.setAttribute('visible', false);
-              plat.removeAttribute('static-body'); // Remove collision when not in use
+              plat.removeAttribute('static-body');
           });
       }
-
       setupPlat('#left-hand', '#plat-l');
       setupPlat('#right-hand', '#plat-r');
+
+      // SLAP LOCOMOTION
+      document.querySelectorAll('#left-hand, #right-hand').forEach(hand => {
+          hand.addEventListener('collide', (e) => {
+              if (isFlying) return;
+              const rig = document.querySelector('#rig');
+              rig.body.applyImpulse(new CANNON.Vec3(0, 10, 0), rig.body.position);
+          });
+      });
 
       function toggleFly() {
           isFlying = !isFlying;
           const rig = document.querySelector('#rig');
           rig.setAttribute('movement-controls', isFlying ? 'fly: true; speed: 0.3' : 'fly: false; speed: 0');
-          rig.body.mass = isFlying ? 0 : 5;
+          rig.body.mass = isFlying ? 0 : 10;
           document.querySelector('#fly-txt').setAttribute('value', `Fly: ${isFlying ? 'ON' : 'OFF'}`);
-      }
-
-      // Physics Pushing (Slapping the ground)
-      document.querySelectorAll('#left-hand, #right-hand').forEach(hand => {
-          hand.addEventListener('collide', (e) => {
-              if (!isFlying) {
-                  const rig = document.querySelector('#rig');
-                  rig.body.applyImpulse(new CANNON.Vec3(0, 7, 0), rig.body.position);
-              }
-          });
-      });
-
-      function spawnEntity(type) {
-          const m = document.createElement('a-entity');
-          m.setAttribute('position', {x: (Math.random()-0.5)*5, y: 2, z: -3});
-          m.innerHTML = `<a-box color="blue" scale="0.4 1 0.3" dynamic-body="mass:1"></a-box>
-                         <a-sphere color="blue" position="0 0.8 0" radius="0.25" dynamic-body="mass:0.5"></a-sphere>`;
-          document.querySelector('#world').appendChild(m);
       }
     </script>
   </body>
