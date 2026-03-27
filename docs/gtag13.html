@@ -2,7 +2,7 @@
 <html>
 <head>
   <meta charset="utf-8">
-  <title>Mini Gorilla Tag VR Fix</title>
+  <title>Mini Gorilla Tag VR Optimized</title>
   <script src="https://aframe.io/releases/1.4.0/aframe.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/aframe-physics-system@4.0.1/dist/aframe-physics-system.min.js"></script>
   <style>
@@ -13,34 +13,155 @@
       text-align: center; z-index: 10;
     }
     #vrPrompt button { margin: 10px; padding: 10px 20px; font-size: 16px; }
+    #tagMessage { position: absolute; top: 10%; width: 100%; text-align:center; font-family:sans-serif; font-size:24px; color:red; z-index: 9; }
   </style>
 </head>
 <body>
+
 <div id="vrPrompt">
   <p>Do you want to play in VR mode?</p>
   <button id="yesVR">Yes</button>
   <button id="noVR">No</button>
 </div>
+<div id="tagMessage"></div>
 
-<a-scene id="scene" style="display:none;" physics="gravity: -9.8">
-  <a-box position="0 1 -3" depth="1" height="1" width="1" color="red"></a-box>
+<a-scene id="scene" physics="gravity: -9.8" vr-mode-ui="enabled: false" style="display:none;">
+
+  <!-- Ground -->
+  <a-plane static-body rotation="-90 0 0" width="50" height="50" color="#4CAF50"></a-plane>
+
+  <!-- Walls -->
+  <a-box class="wall" static-body position="0 2 -10" depth="1" height="4" width="20" color="gray"></a-box>
+  <a-box class="wall" static-body position="10 2 0" depth="20" height="4" width="1" color="gray"></a-box>
+  <a-box class="wall" static-body position="-10 2 0" depth="20" height="4" width="1" color="gray"></a-box>
+
+  <!-- Forest container -->
+  <a-entity id="forest"></a-entity>
+
 </a-scene>
 
 <script>
 window.onload = function(){
   const vrPrompt = document.getElementById('vrPrompt');
   const scene = document.getElementById('scene');
+  const tagMsg = document.getElementById('tagMessage');
 
   document.getElementById('yesVR').onclick = () => {
     vrPrompt.style.display = 'none';
     scene.style.display = 'block';
-    scene.enterVR(); // now guaranteed to run on user click
+    scene.enterVR();
+    initGame();
   };
-
   document.getElementById('noVR').onclick = () => {
     vrPrompt.style.display = 'none';
     scene.style.display = 'block';
+    initGame();
   };
+
+  function initGame(){
+    // --- Player Gorilla ---
+    const rig = document.createElement('a-entity');
+    rig.setAttribute('id','rig');
+    rig.setAttribute('position','0 2 0');
+    rig.setAttribute('dynamic-body','mass:5');
+    rig.classList.add('player','it');
+    scene.appendChild(rig);
+
+    // Head & Torso
+    const head = document.createElement('a-sphere');
+    head.setAttribute('radius','0.3'); head.setAttribute('position','0 1.8 0'); head.setAttribute('color','brown');
+    const torso = document.createElement('a-cylinder');
+    torso.setAttribute('radius','0.3'); torso.setAttribute('height','0.8'); torso.setAttribute('position','0 1.2 0'); torso.setAttribute('color','darkbrown');
+    rig.appendChild(head); rig.appendChild(torso);
+
+    // Hands
+    ['left','right'].forEach(hand=>{
+      const h = document.createElement('a-sphere');
+      h.setAttribute('radius','0.15'); h.setAttribute('color','brown');
+      h.setAttribute('hand-controls',hand); h.setAttribute('grab-move','');
+      rig.appendChild(h);
+    });
+
+    // Camera
+    const cam = document.createElement('a-entity'); cam.setAttribute('camera',''); cam.setAttribute('look-controls',''); cam.setAttribute('position','0 1.6 0');
+    rig.appendChild(cam);
+
+    // --- Hand push movement ---
+    AFRAME.registerComponent('grab-move',{
+      init:function(){ this.prevPos=this.el.object3D.position.clone(); this.rig=rig; },
+      tick:function(){
+        const cur=this.el.object3D.position.clone();
+        const vel=cur.clone().sub(this.prevPos);
+        this.rig.object3D.position.x-=vel.x*2; this.rig.object3D.position.z-=vel.z*2;
+        this.prevPos.copy(cur);
+      }
+    });
+
+    // --- Forest + Stump ---
+    const forest = document.getElementById('forest');
+    for(let i=0;i<20;i++){
+      let x=(Math.random()-0.5)*40, z=(Math.random()-0.5)*40;
+      let trunk = document.createElement('a-cylinder'); trunk.setAttribute('position',`${x} 1 ${z}`); trunk.setAttribute('radius','0.2'); trunk.setAttribute('height','2'); trunk.setAttribute('color','#8B4513');
+      let leaves = document.createElement('a-sphere'); leaves.setAttribute('position',`${x} 2.5 ${z}`); leaves.setAttribute('radius','1'); leaves.setAttribute('color','green');
+      forest.appendChild(trunk); forest.appendChild(leaves);
+    }
+    // Stump
+    const stump = document.createElement('a-cylinder'); stump.setAttribute('position','0 0.25 0'); stump.setAttribute('radius','0.5'); stump.setAttribute('height','0.5'); stump.setAttribute('color','#654321');
+    forest.appendChild(stump);
+
+    // --- AI Bots ---
+    let bots=[];
+    function createBot(id,x,z){
+      let bot=document.createElement('a-entity'); bot.setAttribute('id',id); bot.classList.add('bot');
+      let head=document.createElement('a-sphere'); head.setAttribute('radius','0.3'); head.setAttribute('color','blue'); head.setAttribute('position','0 1.8 0');
+      let torso=document.createElement('a-cylinder'); torso.setAttribute('radius','0.3'); torso.setAttribute('height','0.8'); torso.setAttribute('color','darkblue'); torso.setAttribute('position','0 1.2 0');
+      bot.appendChild(head); bot.appendChild(torso);
+      bot.object3D.position.set(x,1.2,z);
+      scene.appendChild(bot); bots.push(bot);
+    }
+    for(let i=0;i<3;i++){ createBot('bot'+i,(Math.random()-0.5)*20,(Math.random()-0.5)*20); }
+
+    AFRAME.registerComponent('bot-move',{
+      tick:function(){
+        bots.forEach(bot=>{
+          let dx=(Math.random()-0.5)*0.05; let dz=(Math.random()-0.5)*0.05;
+          bot.object3D.position.x+=dx; bot.object3D.position.z+=dz;
+          if(bot.object3D.position.x>24) bot.object3D.position.x=-24;
+          if(bot.object3D.position.x<-24) bot.object3D.position.x=24;
+          if(bot.object3D.position.z>24) bot.object3D.position.z=-24;
+          if(bot.object3D.position.z<-24) bot.object3D.position.z=24;
+        });
+      }
+    });
+    scene.setAttribute('bot-move','');
+
+    // --- Tag collision & musical ghost ---
+    function spawnGhost(){
+      let ghost=document.createElement('a-entity'); ghost.setAttribute('position','0 2 -2');
+      let ghHead=document.createElement('a-sphere'); ghHead.setAttribute('radius','0.3'); ghHead.setAttribute('color','white'); ghost.appendChild(ghHead);
+      let ghTorso=document.createElement('a-cylinder'); ghTorso.setAttribute('radius','0.3'); ghTorso.setAttribute('height','0.8'); ghTorso.setAttribute('color','lightgray'); ghost.appendChild(ghTorso);
+      ghost.setAttribute('animation','property: position; to:0 2.5 -2; dir:alternate; dur:1000; loop:true');
+      let sound=document.createElement('a-sound'); sound.setAttribute('src','https://cdn.pixabay.com/download/audio/2022/03/15/audio_2f0e0c4f42.mp3?filename=spooky-music-ambient-11294.mp3'); sound.setAttribute('autoplay','true'); sound.setAttribute('loop','true'); ghost.appendChild(sound);
+      scene.appendChild(ghost); setTimeout(()=>{ ghost.remove(); },10000);
+    }
+
+    // Detect simple tag: if you touch bot
+    AFRAME.registerComponent('tag-collision',{
+      init:function(){
+        this.el.addEventListener('collide', e=>{
+          const other = e.detail.body?.el;
+          if(!other) return;
+          if(this.el.classList.contains('it') && other.classList.contains('bot')){
+            this.el.classList.remove('it');
+            tagMsg.innerText="You got tagged!"; setTimeout(()=>{ tagMsg.innerText=''; },2000);
+            spawnGhost();
+          }
+        });
+      }
+    });
+
+    [rig, head, torso].forEach(el=>el.setAttribute('tag-collision',''));
+  }
 };
 </script>
 </body>
