@@ -1,53 +1,44 @@
 <!DOCTYPE html>
 <html>
   <head>
-    <title>BEYOND SANDBOX | FULL RECONSTRUCTION</title>
+    <meta charset="utf-8">
+    <title>BEYOND | INSTANT BOOT</title>
     <script src="https://aframe.io/releases/1.4.2/aframe.min.js"></script>
     <script src="https://cdn.jsdelivr.net/gh/c-frame/aframe-extras@7.2.0/dist/aframe-extras.min.js"></script>
     <script src="https://cdn.jsdelivr.net/gh/n5ro/aframe-physics-system@v4.0.1/dist/aframe-physics-system.min.js"></script>
-    <script src="https://unpkg.com/aframe-particle-system-component@1.1.3/dist/aframe-particle-system-component.min.js"></script>
   </head>
   <body>
-    <a-scene physics="iterations: 40; gravity: -9.8">
+    <a-scene 
+      loading-screen="enabled: false" 
+      physics="driver: local; gravity: -9.8; iterations: 20">
       
       <a-assets>
-        <a-asset-item id="glock-model" src="https://cdn.glitch.global/c31a556b-3549-4977-8494-b25756a1b268/glock_17.glb"></a-asset-item>
-        <audio id="snd-shot" src="https://cdn.glitch.global/c31a556b-3549-4977-8494-b25756a1b268/gunshot.mp3" crossorigin="anonymous"></audio>
-        <audio id="snd-click" src="https://cdn.glitch.global/c31a556b-3549-4977-8494-b25756a1b268/click.mp3" crossorigin="anonymous"></audio>
-      </a-assets>
-
-      <a-entity id="start-menu" position="0 1.6 -2">
-          <a-plane color="#000" height="1" width="1.5" opacity="0.9">
-              <a-text value="BEYOND SANDBOX" color="red" align="center" position="0 0.3 0.01" scale="1.5 1.5 1.5"></a-text>
-              <a-plane id="start-btn" class="menu-btn" color="#222" position="0 -0.1 0.02" width="0.6" height="0.2" onclick="startGame()">
-                  <a-text value="ENTER SANDBOX" align="center" scale="0.8 0.8 0.8"></a-text>
-              </a-plane>
-          </a-plane>
-      </a-entity>
+        </a-assets>
 
       <a-sky color="#050505"></a-sky>
-      <a-plane static-body rotation="-90 0 0" width="100" height="100" color="#111"></a-plane>
-      <a-box static-body position="0 2.5 -10" width="20" height="5" depth="0.5" color="#222"></a-box>
+      <a-light type="ambient" intensity="0.5"></a-light>
+      <a-light type="point" position="2 5 -2" intensity="0.8" color="red"></a-light>
+      
+      <a-box static-body position="0 -0.5 0" width="100" height="1" depth="100" color="#111"></a-box>
 
-      <a-entity id="rig" movement-controls="speed: 0.15" kinematic-body="radius: 0.35">
+      <a-entity id="rig" movement-controls="speed: 0.2" kinematic-body>
         <a-entity camera id="head" position="0 1.6 0" look-controls>
-            <a-entity id="hud" position="0 0 -0.5">
-                <a-text id="speed-ui" value="WALKING" color="white" scale="0.08 0.08 0.08" position="-0.4 0.2 0"></a-text>
-            </a-entity>
-        </a-camera>
+            <a-text value="BEYOND v1.0" color="red" scale="0.1 0.1 0.1" position="0 0.1 -0.5" align="center"></a-text>
+        </a-entity>
 
         <a-entity id="left-hand" oculus-touch-controls="hand: left">
-            <a-entity id="mod-menu" visible="false" position="0 0.15 0" rotation="-45 0 0">
-                <a-plane color="#000" height="0.5" width="0.4" opacity="0.9">
-                    <a-text value="MODS" align="center" position="0 0.2 0.01" scale="0.1 0.1 0.1" color="red"></a-text>
-                    <a-plane class="menu-btn" color="#333" position="0 0 0.02" width="0.3" height="0.1" onclick="spawnNPC()"><a-text value="Spawn NPC" align="center" scale="0.1 0.1 0.1"></a-text></a-plane>
+            <a-entity id="menu" visible="false" position="0 0.2 0" rotation="-45 0 0">
+                <a-plane color="#000" height="0.4" width="0.3" opacity="0.9">
+                    <a-plane class="btn" color="#333" position="0 0 0.01" width="0.25" height="0.1" onclick="spawnTarget()">
+                        <a-text value="SPAWN NPC" align="center" scale="0.1 0.1 0.1"></a-text>
+                    </a-plane>
                 </a-plane>
             </a-entity>
         </a-entity>
 
-        <a-entity id="right-hand" oculus-touch-controls="hand: right" laser-controls="hand: right" raycaster="objects: .menu-btn, .npc; far: 100">
-            <a-gltf-model src="#glock-model" scale="0.012 0.012 0.012" rotation="0 180 0" position="0 0 -0.1"></a-gltf-model>
-            <a-sound id="gunshot-sound" src="#snd-shot" poolSize="5"></a-sound>
+        <a-entity id="right-hand" oculus-touch-controls="hand: right" laser-controls="hand: right" raycaster="objects: .btn, .target; far: 50">
+            <a-entity id="gun" position="0 0 -0.1">
+                <a-box color="#111" scale="0.03 0.05 0.2"></a-box> <a-box color="#111" scale="0.03 0.1 0.04" position="0 -0.05 0.06" rotation="15 0 0"></a-box> </a-entity>
         </a-entity>
       </a-entity>
 
@@ -56,74 +47,49 @@
     </a-scene>
 
     <script>
-      let isCrouching = false;
-      let isSprinting = false;
-
-      // START GAME FUNCTION
-      window.startGame = function() {
-          document.querySelector('#start-menu').setAttribute('visible', false);
-          document.querySelector('#start-btn').classList.remove('menu-btn'); // Disable menu clicks
-      }
-
-      // 1. CROUCHING & SPRINTING LOGIC
-      window.addEventListener('keydown', (e) => {
-          const rig = document.querySelector('#rig');
-          const head = document.querySelector('#head');
-          
-          if (e.code === 'ShiftLeft') { // SPRINT
-              isSprinting = true;
-              rig.setAttribute('movement-controls', 'speed: 0.4');
-              document.querySelector('#speed-ui').setAttribute('value', 'SPRINTING');
-          }
-          if (e.code === 'ControlLeft') { // CROUCH
-              isCrouching = !isCrouching;
-              head.setAttribute('position', isCrouching ? '0 0.8 0' : '0 1.6 0');
-          }
-      });
-
-      window.addEventListener('keyup', (e) => {
-          if (e.code === 'ShiftLeft') {
-              isSprinting = false;
-              document.querySelector('#rig').setAttribute('movement-controls', 'speed: 0.15');
-              document.querySelector('#speed-ui').setAttribute('value', 'WALKING');
-          }
-      });
-
-      // 2. SHOOTING SYSTEM (Recoil + Gore + Sound)
-      document.querySelector('#right-hand').addEventListener('triggerdown', function() {
-          this.querySelector('#gunshot-sound').components.sound.playSound();
-          
-          // Recoil
-          this.setAttribute('animation', 'property: rotation; to: -20 0 0; dur: 50; dir: alternate; loop: 1');
-
-          const ray = this.components.raycaster;
-          const hit = ray.getIntersection(document.querySelector('.npc'));
-
-          if (hit) {
-              // Beyond Physics Gore
-              const blood = document.createElement('a-entity');
-              blood.setAttribute('position', hit.point);
-              blood.setAttribute('particle-system', 'color: #900; size: 0.15; particleCount: 100; duration: 0.1');
-              document.querySelector('a-scene').appendChild(blood);
-              
-              if (hit.el.body) {
-                  hit.el.body.applyImpulse(new CANNON.Vec3(0, 5, -15), new CANNON.Vec3().copy(hit.point));
-              }
-          }
-      });
-
-      // 3. NPC SPAWNER
-      window.spawnNPC = function() {
+      // 1. NPC Spawner
+      window.spawnTarget = function() {
           const e = document.createElement('a-entity');
-          e.setAttribute('position', '0 1 -5');
-          e.innerHTML = `<a-box class="npc" color="#333" scale="0.5 1.5 0.3" dynamic-body="mass: 10"></a-box>`;
+          e.setAttribute('position', {x: 0, y: 1.5, z: -5});
+          e.innerHTML = `
+            <a-box class="target" color="#444" scale="0.5 1.5 0.3" dynamic-body="mass: 10"></a-box>
+            <a-sphere class="target" color="#d2b48c" position="0 1 0" radius="0.25" dynamic-body="mass: 2"></a-sphere>
+          `;
           document.querySelector('#world').appendChild(e);
       };
 
-      // X Button Menu Toggle
+      // 2. Shooting & Beyond Physics
+      document.querySelector('#right-hand').addEventListener('triggerdown', function() {
+          // Recoil
+          document.querySelector('#gun').setAttribute('animation', 'property: rotation; to: -15 0 0; dur: 50; dir: alternate; loop: 1');
+
+          const ray = this.components.raycaster;
+          const hit = ray.getIntersection(document.querySelector('.target'));
+
+          if (hit) {
+              if (hit.el.body) {
+                  // Beyond Impulse Force
+                  hit.el.body.applyImpulse(new CANNON.Vec3(0, 4, -15), new CANNON.Vec3().copy(hit.point));
+              }
+              // Visual "Bleed" Flash
+              hit.el.setAttribute('color', 'red');
+              setTimeout(() => hit.el.setAttribute('color', '#444'), 100);
+          }
+      });
+
+      // 3. Mod Menu Toggle (X Button)
       document.querySelector('#left-hand').addEventListener('xbuttondown', () => {
-          const m = document.querySelector('#mod-menu');
+          const m = document.querySelector('#menu');
           m.setAttribute('visible', !m.getAttribute('visible'));
+      });
+
+      // 4. Crouch (Left Stick Click or Key)
+      let crouching = false;
+      window.addEventListener('keydown', (e) => {
+          if (e.code === 'ControlLeft') {
+              crouching = !crouching;
+              document.querySelector('#head').setAttribute('position', crouching ? '0 0.8 0' : '0 1.6 0');
+          }
       });
     </script>
   </body>
