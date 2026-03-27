@@ -1,88 +1,111 @@
 <!DOCTYPE html>
 <html>
   <head>
-    <title>Quest 3 Fixed VR</title>
+    <title>Poppy G-Tag Sandbox</title>
     <script src="https://aframe.io/releases/1.4.2/aframe.min.js"></script>
     <script src="https://cdn.jsdelivr.net/gh/c-frame/aframe-extras@7.2.0/dist/aframe-extras.min.js"></script>
     <script src="https://unpkg.com/aframe-environment-component@1.3.2/dist/aframe-environment-component.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/gh/n5ro/aframe-physics-system@v4.0.1/dist/aframe-physics-system.min.js"></script>
   </head>
   <body>
-    <a-scene webxr="referenceSpaceType: local-floor" xr-mode-ui="enabled: true">
+    <a-scene physics="debug: false; gravity: -9.8" webxr="referenceSpaceType: local-floor">
       
       <a-assets>
         <a-asset-item id="hand" src="https://vazxmixjsiawhamurptx.supabase.co/storage/v1/object/public/models/hand-left/model.gltf"></a-asset-item>
       </a-assets>
 
-      <a-entity environment="preset: osiris; dressingAmount: 80; ground: hills; lighting: point; shadow: false"></a-entity>
+      <a-entity environment="preset: osiris; ground: hills; dressingAmount: 60; lighting: point"></a-entity>
 
-      <a-entity id="rig" movement-controls="fly: false; speed: 0.2">
-        <a-entity camera position="0 1.6 0" look-controls="pointerLockEnabled: true"></a-entity>
+      <a-entity id="rig" movement-controls="fly: false; speed: 0.3" kinematic-body>
+        <a-entity camera position="0 1.6 0" look-controls></a-entity>
         
         <a-entity id="left-hand" oculus-touch-controls="hand: left">
             <a-gltf-model src="#hand" material="color: blue" scale="1.5 1.5 1.5"></a-gltf-model>
             
-            <a-entity id="wrist-menu" position="0.1 0.1 0.1" rotation="-90 0 0" visible="false">
-                <a-plane color="#111" height="0.5" width="0.35" opacity="0.9">
-                    <a-text value="SANDBOX" align="center" position="0 0.2 0.01" scale="0.15 0.15 0.15"></a-text>
+            <a-entity id="mod-menu" position="0.1 0.1 0.1" rotation="-90 0 0" visible="false">
+                <a-plane color="#111" height="0.9" width="0.5" opacity="0.9">
+                    <a-text value="POPPY MOD MENU" align="center" position="0 0.42 0.01" scale="0.15 0.15 0.15"></a-text>
                     
-                    <a-plane class="menu-btn" color="#0033ff" position="0 0.05 0.02" width="0.25" height="0.08" onclick="spawn('huggy')">
-                        <a-text value="Huggy" align="center" scale="0.12 0.12 0.12"></a-text>
-                    </a-plane>
-                    
-                    <a-plane class="menu-btn" color="#6600cc" position="0 -0.05 0.02" width="0.25" height="0.08" onclick="spawn('catnap')">
-                        <a-text value="Catnap" align="center" scale="0.12 0.12 0.12"></a-text>
-                    </a-plane>
-
-                    <a-plane class="menu-btn" color="red" position="0 -0.18 0.02" width="0.25" height="0.08" onclick="location.reload()">
-                        <a-text value="RESET WORLD" align="center" scale="0.1 0.1 0.1"></a-text>
-                    </a-plane>
+                    <a-entity id="btn-grid" position="0 0.3 0.02">
+                        <a-plane class="menu-btn" color="blue" position="0 0 0" width="0.4" height="0.07" onclick="setGun('huggy')"><a-text value="Huggy Gun" align="center" scale="0.1 0.1 0.1"></a-text></a-plane>
+                        <a-plane class="menu-btn" color="purple" position="0 -0.09 0" width="0.4" height="0.07" onclick="setGun('catnap')"><a-text value="Catnap Gun" align="center" scale="0.1 0.1 0.1"></a-text></a-plane>
+                        <a-plane class="menu-btn" color="orange" position="0 -0.18 0" width="0.4" height="0.07" onclick="setGun('dogday')"><a-text value="DogDay Gun" align="center" scale="0.1 0.1 0.1"></a-text></a-plane>
+                        <a-plane class="menu-btn" color="pink" position="0 -0.27 0" width="0.4" height="0.07" onclick="setGun('mommy')"><a-text value="Mommy Gun" align="center" scale="0.1 0.1 0.1"></a-text></a-plane>
+                        
+                        <a-plane class="menu-btn" color="green" position="0 -0.36 0" width="0.4" height="0.07" onclick="toggleGTag()"><a-text id="gt-text" value="G-Tag Locomotion: ON" align="center" scale="0.1 0.1 0.1"></a-text></a-plane>
+                        <a-plane class="menu-btn" color="#444" position="0 -0.45 0" width="0.4" height="0.07" onclick="location.reload()"><a-text value="Reset Game" align="center" scale="0.1 0.1 0.1"></a-text></a-plane>
+                        <a-plane class="menu-btn" color="#ff0000" position="0 -0.54 0" width="0.4" height="0.07" onclick="clearAll()"><a-text value="Clear All" align="center" scale="0.1 0.1 0.1"></a-text></a-plane>
+                        <a-plane class="menu-btn" color="#333" position="0 -0.63 0" width="0.4" height="0.07"><a-text value="Speed Boost" align="center" scale="0.1 0.1 0.1"></a-text></a-plane>
+                        <a-plane class="menu-btn" color="#333" position="0 -0.72 0" width="0.4" height="0.07"><a-text value="Low Gravity" align="center" scale="0.1 0.1 0.1"></a-text></a-plane>
+                    </a-entity>
                 </a-plane>
             </a-entity>
         </a-entity>
 
-        <a-entity id="right-hand" oculus-touch-controls="hand: right" laser-controls="hand: right" raycaster="objects: .menu-btn, .monster; far: 10">
+        <a-entity id="right-hand" oculus-touch-controls="hand: right" laser-controls="hand: right" raycaster="objects: .menu-btn, .monster, .ground; far: 20">
             <a-gltf-model src="#hand" material="color: red" scale="1.5 1.5 1.5"></a-gltf-model>
+            <a-sphere id="gun-tip" position="0 0 -0.2" radius="0.02" color="blue"></a-sphere>
         </a-entity>
       </a-entity>
 
-      <a-entity id="monster-spawn-root"></a-entity>
+      <a-entity id="world-root"></a-entity>
 
     </a-scene>
 
     <script>
-      // Stable Menu Toggle (X/Y Buttons)
+      let currentGun = 'huggy';
+      let isGTag = true;
+
+      // Toggle Menu
       const leftHand = document.querySelector('#left-hand');
-      const menu = document.querySelector('#wrist-menu');
+      leftHand.addEventListener('xbuttondown', () => {
+          const m = document.querySelector('#mod-menu');
+          m.setAttribute('visible', !m.getAttribute('visible'));
+      });
 
-      leftHand.addEventListener('xbuttondown', () => menu.setAttribute('visible', !menu.getAttribute('visible')));
-      leftHand.addEventListener('ybuttondown', () => menu.setAttribute('visible', !menu.getAttribute('visible')));
+      function setGun(type) {
+          currentGun = type;
+          const tip = document.querySelector('#gun-tip');
+          const colors = {huggy: 'blue', catnap: 'purple', dogday: 'orange', mommy: 'pink'};
+          tip.setAttribute('color', colors[type]);
+      }
 
-      function spawn(type) {
-        const root = document.querySelector('#monster-spawn-root');
-        const monster = document.createElement('a-entity');
-        monster.setAttribute('position', `${(Math.random()-0.5)*8} 0 -5`);
-        monster.setAttribute('class', 'monster');
+      function toggleGTag() {
+          isGTag = !isGTag;
+          document.querySelector('#gt-text').setAttribute('value', `G-Tag Locomotion: ${isGTag ? 'ON' : 'OFF'}`);
+      }
+
+      function clearAll() { document.querySelector('#world-root').innerHTML = ''; }
+
+      // SHOOT TO SPAWN LOGIC
+      document.querySelector('#right-hand').addEventListener('triggerdown', function(evt) {
+          const raycaster = this.components.raycaster;
+          const intersection = raycaster.getIntersection(document.querySelector('.environmentGround'));
+          
+          if (intersection) {
+              const pos = intersection.point;
+              spawnAt(currentGun, pos);
+          }
+      });
+
+      function spawnAt(type, pos) {
+        const root = document.querySelector('#world-root');
+        const m = document.createElement('a-entity');
+        m.setAttribute('position', pos);
+        m.setAttribute('class', 'monster');
 
         if(type === 'huggy') {
-            monster.innerHTML = `
-                <a-box color="blue" position="0 1.5 0" scale="0.5 2.5 0.3"></a-box>
-                <a-sphere color="blue" position="0 3 0" radius="0.35"></a-sphere>
-                <a-cylinder color="blue" position="0.4 1.5 0" radius="0.04" height="2.2"></a-cylinder>
-                <a-cylinder color="blue" position="-0.4 1.5 0" radius="0.04" height="2.2"></a-cylinder>
-            `;
+            m.innerHTML = `<a-box color="blue" position="0 1.25 0" scale="0.4 2.5 0.3"></a-box><a-sphere color="blue" position="0 2.7 0" radius="0.3"></a-sphere>`;
+        } else if(type === 'catnap') {
+            m.innerHTML = `<a-box color="purple" position="0 0.4 0" scale="0.6 0.4 1"></a-box><a-sphere color="purple" position="0 1 0.4" radius="0.3"></a-sphere>`;
+        } else if(type === 'dogday') {
+            m.innerHTML = `<a-box color="orange" position="0 0.4 0" scale="0.6 0.4 1"></a-box><a-sphere color="orange" position="0 1 0.4" radius="0.3"></a-sphere>`;
         } else {
-            monster.innerHTML = `
-                <a-box color="purple" position="0 0.5 0" scale="0.7 0.5 1"></a-box>
-                <a-sphere color="purple" position="0 1.1 0.3" radius="0.3"></a-sphere>
-                <a-cylinder color="purple" position="0 0.5 -0.6" rotation="45 0 0" radius="0.02" height="1"></a-cylinder>
-            `;
+            m.innerHTML = `<a-cylinder color="pink" position="0 2 0" radius="0.1" height="4"></a-cylinder><a-sphere color="pink" position="0 4.2 0" radius="0.3"></a-sphere>`;
         }
 
-        monster.addEventListener('click', function() {
-          this.remove();
-        });
-
-        root.appendChild(monster);
+        m.addEventListener('click', function() { this.remove(); });
+        root.appendChild(m);
       }
     </script>
   </body>
