@@ -1,227 +1,58 @@
 <!DOCTYPE html>
-<html lang="en">
-<head>
-    <title>BO4 VR: TACTICAL OVERHAUL</title>
-    <meta charset="utf-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-    <style>
-        body { margin: 0; background-color: #000; overflow: hidden; font-family: 'Courier New', monospace; }
-        #vr-overlay {
-            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
-            display: flex; justify-content: center; align-items: center;
-            background: rgba(0,0,0,0.9); z-index: 100;
+<html>
+  <head>
+    <title>COD VR Standalone</title>
+    <script src="https://aframe.io/releases/1.4.2/aframe.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/gh/c-frame/aframe-physics-system@v4.2.2/dist/aframe-physics-system.min.js"></script>
+    <script src="https://unpkg.com/aframe-environment-component@1.3.2/dist/aframe-environment-component.min.js"></script>
+  </head>
+  <body>
+    <a-scene physics="debug: false; gravity: -9.8">
+      
+      <a-assets>
+        <a-asset-item id="gun-model" src="path_to_gun.glb"></a-asset-item>
+      </a-assets>
+
+      <a-entity environment="preset: egypt; dressingAmount: 50"></a-entity>
+
+      <a-entity id="player" movement-controls="controls: checkpoint, gamepad">
+        <a-entity camera position="0 1.6 0" look-controls></a-entity>
+        
+        <a-entity oculus-touch-controls="hand: left" 
+                  thumbstick-logging 
+                  @thumbstickdown="toggleSprint"></a-entity>
+
+        <a-entity oculus-touch-controls="hand: right" 
+                  triggerdown="shootWeapon"
+                  thumbstickdown="toggleCrouch"></a-entity>
+        
+        <a-box id="holster" static-body 
+               position="0 0.8 -0.2" 
+               opacity="0.1" width="0.3" height="0.1" depth="0.3">
+          <a-entity id="weapon" gltf-model="#gun-model" scale="0.1 0.1 0.1"></a-entity>
+        </a-box>
+      </a-entity>
+
+    </a-scene>
+
+    <script>
+      // Simple Money Logic
+      let score = 0;
+      let money = 0;
+
+      // Logic for killing a zombie
+      function onZombieKilled() {
+        money += 5;
+        console.log("Current Money: $" + money);
+      }
+
+      // Logic for buying from crate
+      function buyWeapon() {
+        if (money >= 10) {
+          money -= 10;
+          // Trigger weapon spawn logic
         }
-        #start-btn {
-            padding: 20px 40px; font-size: 24px; color: cyan; background: #111;
-            border: 3px solid cyan; cursor: pointer; pointer-events: auto;
-        }
-        #hud {
-            position: absolute; width: 100%; height: 100%; pointer-events: none;
-            display: flex; flex-direction: column; justify-content: space-between;
-            padding: 40px; box-sizing: border-box; z-index: 10;
-        }
-        .round { color: #ff0000; font-size: 60px; font-weight: bold; }
-        #hp-bar { width: 300px; height: 15px; background: #222; border: 1px solid #444; }
-        #hp-fill { width: 100%; height: 100%; background: #b00; }
-    </style>
-</head>
-<body>
-
-    <div id="vr-overlay">
-        <button id="start-btn">START BO4 VR (QUEST 3)</button>
-    </div>
-
-    <div id="hud">
-        <div class="round" id="rd-val">1</div>
-        <div style="display: flex; justify-content: space-between; align-items: flex-end;">
-            <div style="color: white;">
-                <div id="hp-txt">HEALTH: 100</div>
-                <div id="hp-bar"><div id="hp-fill"></div></div>
-                <div id="ammo-txt" style="margin-top:10px; font-size: 24px;">30 / 120</div>
-            </div>
-            <div style="color: #0f0; font-size: 40px;" id="pts-val">500</div>
-        </div>
-    </div>
-
-    <script type="module">
-        import * as THREE from 'https://cdn.skypack.dev/three@0.136.0/build/three.module.js';
-
-        // --- AUDIO SYNTHESIZER ---
-        const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-        function playSound(type) {
-            const osc = audioCtx.createOscillator();
-            const gain = audioCtx.createGain();
-            osc.connect(gain);
-            gain.connect(audioCtx.destination);
-
-            if (type === 'shot') {
-                osc.type = 'square';
-                osc.frequency.setValueAtTime(150, audioCtx.currentTime);
-                osc.frequency.exponentialRampToValueAtTime(40, audioCtx.currentTime + 0.1);
-                gain.gain.setValueAtTime(0.3, audioCtx.currentTime);
-                gain.gain.linearRampToValueAtTime(0, audioCtx.currentTime + 0.1);
-                osc.start(); osc.stop(audioCtx.currentTime + 0.1);
-            } else if (type === 'roar') {
-                osc.type = 'sawtooth';
-                osc.frequency.setValueAtTime(60, audioCtx.currentTime);
-                osc.frequency.linearRampToValueAtTime(20, audioCtx.currentTime + 0.5);
-                gain.gain.setValueAtTime(0.1, audioCtx.currentTime);
-                gain.gain.linearRampToValueAtTime(0, audioCtx.currentTime + 0.5);
-                osc.start(); osc.stop(audioCtx.currentTime + 0.5);
-            }
-        }
-
-        // --- GAME ENGINE ---
-        const state = { 
-            hp: 100, pts: 500, round: 1, ammo: 30, reserve: 120, 
-            zombies: [], spawned: 0, total: 6, isCrouching: false 
-        };
-
-        const scene = new THREE.Scene();
-        scene.fog = new THREE.FogExp2(0x0a0018, 0.05);
-        const camera = new THREE.PerspectiveCamera(75, window.innerWidth/window.innerHeight, 0.1, 1000);
-        const renderer = new THREE.WebGLRenderer({ antialias: true });
-        renderer.setSize(window.innerWidth, window.innerHeight);
-        renderer.xr.enabled = true;
-        document.body.appendChild(renderer.domElement);
-
-        // --- VR START LOGIC ---
-        const startBtn = document.getElementById('start-btn');
-        startBtn.addEventListener('click', () => {
-            navigator.xr.requestSession('immersive-vr').then(session => {
-                renderer.xr.setSession(session);
-                document.getElementById('vr-overlay').style.display = 'none';
-                audioCtx.resume();
-            });
-        });
-
-        // --- WORLD ---
-        const floor = new THREE.Mesh(new THREE.PlaneGeometry(200, 200), new THREE.MeshStandardMaterial({ color: 0x080808 }));
-        floor.rotation.x = -Math.PI/2;
-        scene.add(floor);
-        scene.add(new THREE.AmbientLight(0x0a0a0a));
-
-        // Waist Magazine Slot (Static relative to body)
-        const waistSlot = new THREE.Mesh(new THREE.BoxGeometry(0.3, 0.1, 0.3), new THREE.MeshBasicMaterial({color: 0x00ff00, wireframe: true}));
-        scene.add(waistSlot);
-
-        // --- WEAPON ---
-        const gun = new THREE.Group();
-        const gBody = new THREE.Mesh(new THREE.BoxGeometry(0.06, 0.1, 0.4), new THREE.MeshBasicMaterial({color: 0x000000}));
-        const neon = new THREE.Mesh(new THREE.BoxGeometry(0.065, 0.01, 0.41), new THREE.MeshBasicMaterial({color: 0x00ffff}));
-        neon.position.y = 0.05;
-        gun.add(gBody, neon);
-
-        const controller2 = renderer.xr.getController(1);
-        controller2.add(gun);
-        const flash = new THREE.SpotLight(0xffffff, 5, 30);
-        controller2.add(flash);
-        controller2.add(flash.target);
-        flash.target.position.set(0, 0, -1);
-        scene.add(controller2);
-
-        // --- ZOMBIES ---
-        class Zombie {
-            constructor() {
-                this.group = new THREE.Group();
-                const head = new THREE.Mesh(new THREE.BoxGeometry(0.4,0.4,0.4), new THREE.MeshStandardMaterial({color: 0x221111}));
-                head.position.y = 1.8;
-                const torso = new THREE.Mesh(new THREE.BoxGeometry(0.5,0.8,0.3), new THREE.MeshStandardMaterial({color: 0x151515}));
-                torso.position.y = 1.2;
-                this.group.add(head, torso);
-                this.group.position.set(Math.random()*40-20, 0, Math.random()*40-20);
-                scene.add(this.group);
-                state.zombies.push(this);
-                if(Math.random() > 0.5) playSound('roar');
-            }
-            update(pPos) {
-                const dir = new THREE.Vector3().subVectors(pPos, this.group.position).normalize();
-                this.group.position.add(new THREE.Vector3(dir.x, 0, dir.z).multiplyScalar(0.04));
-                this.group.lookAt(pPos.x, 0, pPos.z);
-                if(this.group.position.distanceTo(pPos) < 1.4) {
-                    state.hp -= 0.1; updateUI();
-                }
-            }
-        }
-
-        function updateUI() {
-            document.getElementById('hp-fill').style.width = state.hp + '%';
-            document.getElementById('pts-val').innerText = state.pts;
-            document.getElementById('rd-val').innerText = state.round;
-            document.getElementById('ammo-txt').innerText = `${state.ammo} / ${state.reserve}`;
-        }
-
-        // --- RELOAD ANIMATION ---
-        function playReload() {
-            gun.position.y -= 0.1;
-            setTimeout(() => {
-                gun.position.y += 0.1;
-                state.reserve -= (30 - state.ammo);
-                state.ammo = 30;
-                updateUI();
-            }, 300);
-        }
-
-        // --- LOOP ---
-        renderer.setAnimationLoop(() => {
-            const pPos = new THREE.Vector3();
-            renderer.xr.getCamera(camera).getWorldPosition(pPos);
-            
-            // Sync Waist Slot to Camera
-            waistSlot.position.set(pPos.x, pPos.y - 0.8, pPos.z);
-            waistSlot.rotation.y = camera.rotation.y;
-
-            // Physical Reload Check
-            const handPos = new THREE.Vector3();
-            controller2.getWorldPosition(handPos);
-            if(handPos.distanceTo(waistSlot.position) < 0.3 && state.ammo < 30) {
-                playReload();
-            }
-
-            // Input Handling (Movement & Crouch)
-            const session = renderer.xr.getSession();
-            if(session) {
-                for(const source of session.inputSources) {
-                    if(source.gamepad && source.handedness === 'left') {
-                        const axes = source.gamepad.axes;
-                        const crouchBtn = source.gamepad.buttons[0].pressed;
-                        
-                        const dir = new THREE.Vector3();
-                        camera.getWorldDirection(dir); dir.y = 0;
-                        const move = dir.multiplyScalar(-axes[1] * 0.08);
-                        renderer.xr.getControllerGrip(0).parent.position.add(move);
-
-                        if(crouchBtn && !state.isCrouching) {
-                            state.isCrouching = true;
-                            renderer.xr.getControllerGrip(0).parent.position.y -= 0.8;
-                        } else if(!crouchBtn && state.isCrouching) {
-                            state.isCrouching = false;
-                            renderer.xr.getControllerGrip(0).parent.position.y += 0.8;
-                        }
-                    }
-                }
-            }
-
-            if(state.spawned < state.total && state.zombies.length < 5) { new Zombie(); state.spawned++; }
-            state.zombies.forEach(z => z.update(pPos));
-            renderer.render(scene, camera);
-        });
-
-        controller2.addEventListener('selectstart', () => {
-            if(state.ammo > 0) {
-                state.ammo--; playSound('shot'); updateUI();
-                const ray = new THREE.Raycaster();
-                const m = new THREE.Matrix4().extractRotation(controller2.matrixWorld);
-                ray.ray.origin.setFromMatrixPosition(controller2.matrixWorld);
-                ray.ray.direction.set(0,0,-1).applyMatrix4(m);
-                const hits = ray.intersectObjects(state.zombies.map(z => z.group), true);
-                if(hits.length > 0) {
-                    const z = state.zombies.find(zm => zm.group.getObjectById(hits[0].object.id) || zm.group === hits[0].object);
-                    scene.remove(z.group); state.zombies.splice(state.zombies.indexOf(z),1);
-                    state.pts += 100; updateUI();
-                }
-            }
-        });
+      }
     </script>
-</body>
+  </body>
 </html>
