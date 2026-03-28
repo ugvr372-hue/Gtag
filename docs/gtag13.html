@@ -1,67 +1,323 @@
 <!DOCTYPE html>
-<html>
-  <head>
-    <title>THE PERFECT VR SANDBOX</title>
-    <script src="https://aframe.io/releases/1.4.2/aframe.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/gh/donmccurdy/aframe-extras@v6.1.1/dist/aframe-extras.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/gh/n5ro/aframe-physics-system@v4.0.1/dist/aframe-physics-system.min.js"></script>
-  </head>
-  <body>
-    <a-scene physics="driver: local; gravity: -9.8; iterations: 30" renderer="antialias: true">
-      
-      <a-sky color="#050505"></a-sky>
-      <a-entity light="type: ambient; intensity: 0.4"></a-entity>
-      <a-entity light="type: point; intensity: 1.5; position: 0 5 0; castShadow: true"></a-entity>
-
-      <a-box static-body 
-             position="0 -2.5 0" 
-             width="100" height="5" depth="100" 
-             color="#111" roughness="1">
-      </a-box>
-
-      <a-entity id="rig" movement-controls="fly: false; speed: 0.2">
-        <a-entity camera position="0 1.6 0" look-controls></a-entity>
+<html lang="en">
+<head>
+    <title>BO4 VR | Night City</title>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <style>
+        body { margin: 0; background-color: #000; overflow: hidden; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
         
-        <a-entity id="leftHand" hand-controls="hand: left" sphere-collider="objects: .interactable"></a-entity>
+        /* BO4 STYLIZED HUD */
+        #ui-layer {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            color: white;
+            z-index: 10;
+        }
+
+        .hud-element { position: absolute; text-shadow: 2px 2px 4px #000; }
+
+        #round-counter {
+            top: 40px;
+            left: 40px;
+            color: #ff3333;
+            font-size: 48px;
+            font-weight: bold;
+        }
+
+        #points-counter {
+            bottom: 40px;
+            right: 40px;
+            color: #44ff44;
+            font-size: 36px;
+        }
+
+        #health-container {
+            bottom: 40px;
+            left: 40px;
+            width: 300px;
+        }
+
+        #hp-label { font-size: 20px; margin-bottom: 5px; }
+        #hp-bar-bg { width: 100%; height: 15px; background: rgba(0,0,0,0.6); border: 1px solid #444; }
+        #hp-bar-fill { width: 100%; height: 100%; background: #ff3333; transition: width 0.3s; }
+
+        #ammo-counter {
+            bottom: 90px;
+            right: 40px;
+            font-size: 28px;
+        }
+
+        #perk-icons {
+            bottom: 70px;
+            left: 40px;
+            display: flex;
+            gap: 10px;
+        }
+
+        .perk {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            border: 2px solid white;
+            display: none;
+        }
+
+        #crosshair {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            width: 10px;
+            height: 10px;
+            border: 2px solid rgba(255,255,255,0.5);
+            border-radius: 50%;
+            transform: translate(-50%, -50%);
+        }
+
+        #interact-prompt {
+            top: 60%;
+            left: 50%;
+            transform: translateX(-50%);
+            font-size: 18px;
+            display: none;
+        }
+    </style>
+</head>
+<body>
+
+    <div id="ui-layer">
+        <div id="round-counter" class="hud-element">1</div>
+        <div id="points-counter" class="hud-element">500</div>
         
-        <a-entity id="rightHand" hand-controls="hand: right" sphere-collider="objects: .interactable">
-          <a-box position="0 0 0.2" width="0.05" height="0.05" depth="0.4" color="#222"></a-box>
-          <a-box position="0 -0.05 -0.1" width="0.03" height="0.1" depth="0.2" color="black" rotation="-45 0 0"></a-box>
-        </a-entity>
-      </a-entity>
+        <div id="health-container" class="hud-element">
+            <div id="hp-label">HP: 100/100</div>
+            <div id="hp-bar-bg"><div id="hp-bar-fill"></div></div>
+        </div>
 
-      <a-entity id="targets">
-        <a-box class="interactable" dynamic-body position="0 1 -3" color="#ff4444"></a-box>
-        <a-box class="interactable" dynamic-body position="0.5 2 -3" color="#ff4444"></a-box>
-        <a-box class="interactable" dynamic-body position="-0.5 0.5 -3" color="#ff4444"></a-box>
-      </a-entity>
-
-    </a-scene>
-
-    <script>
-      // SHOOTING LOGIC: Press trigger to fire physics balls
-      window.addEventListener('triggerdown', function (evt) {
-        let scene = document.querySelector('a-scene');
-        let bullet = document.createElement('a-sphere');
+        <div id="ammo-counter" class="hud-element">30 / 120</div>
         
-        // Get hand position and direction
-        let hand = document.querySelector('#rightHand').object3D;
-        let worldPos = new THREE.Vector3();
-        hand.getWorldPosition(worldPos);
+        <div id="perk-icons" class="hud-element">
+            <div id="jugg" class="perk" style="background: #ff0000;"></div>
+            <div id="speed" class="perk" style="background: #00ff00;"></div>
+            <div id="double" class="perk" style="background: #ff8800;"></div>
+        </div>
 
-        bullet.setAttribute('radius', '0.03');
-        bullet.setAttribute('color', 'yellow');
-        bullet.setAttribute('position', worldPos);
-        bullet.setAttribute('dynamic-body', 'mass: 0.5'); // Heavy bullets for impact
+        <div id="interact-prompt" class="hud-element">PRESS [F] TO BUY PERK</div>
+        <div id="crosshair"></div>
+    </div>
+
+    <script type="module">
+        import * as THREE from 'https://unpkg.com/three@0.157.0/build/three.module.js';
+        import { PointerLockControls } from 'https://unpkg.com/three@0.157.0/examples/jsm/controls/PointerLockControls.js';
+
+        // --- GAME STATE ---
+        const state = {
+            points: 500,
+            hp: 100,
+            maxHp: 100,
+            round: 1,
+            ammo: 30,
+            reserve: 120,
+            isReloading: false,
+            zombiesAlive: 0,
+            totalToSpawn: 6,
+            spawnedThisRound: 0,
+            hasJugg: false,
+            hasSpeed: false,
+            hasDouble: false
+        };
+
+        // --- CORE ENGINE ---
+        const scene = new THREE.Scene();
+        scene.background = new THREE.Color(0x000000);
+        scene.fog = new THREE.FogExp2(0x0a0015, 0.04); // Purple Atmospheric Haze
+
+        const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+        const renderer = new THREE.WebGLRenderer({ antialias: true });
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        renderer.setPixelRatio(window.devicePixelRatio);
+        renderer.shadowMap.enabled = true;
+        document.body.appendChild(renderer.domElement);
+
+        const controls = new PointerLockControls(camera, document.body);
+        document.body.addEventListener('click', () => controls.lock());
+
+        // --- LIGHTING ---
+        const ambient = new THREE.AmbientLight(0x050505); // Near total darkness
+        scene.add(ambient);
+
+        // Tactical Spotlight (Flashlight)
+        const flashlight = new THREE.SpotLight(0xffffff, 2, 50, Math.PI / 6, 0.5);
+        flashlight.position.set(0, 0, 0);
+        camera.add(flashlight);
+        camera.add(flashlight.target);
+        flashlight.target.position.set(0, 0, -1);
+        scene.add(camera);
+
+        // --- TEXTURE GEN (Procedural Concrete) ---
+        const canvas = document.createElement('canvas');
+        canvas.width = 64; canvas.height = 64;
+        const ctx = canvas.getContext('2d');
+        for(let i=0; i<4096; i++) {
+            const c = Math.random() * 50 + 20;
+            ctx.fillStyle = `rgb(${c},${c},${c})`;
+            ctx.fillRect(i%64, Math.floor(i/64), 1, 1);
+        }
+        const concreteTex = new THREE.CanvasTexture(canvas);
+        concreteTex.wrapS = concreteTex.wrapT = THREE.RepeatWrapping;
+        concreteTex.repeat.set(10, 10);
+
+        // --- WORLD ---
+        const floorGeo = new THREE.PlaneGeometry(1000, 1000);
+        const floorMat = new THREE.MeshStandardMaterial({ map: concreteTex, color: 0x111111, roughness: 0.1 });
+        const floor = new THREE.Mesh(floorGeo, floorMat);
+        floor.rotation.x = -Math.PI / 2;
+        floor.receiveShadow = true;
+        scene.add(floor);
+
+        // Buildings (Dark Skeletal Pillars)
+        const buildings = [];
+        for(let i=0; i<50; i++) {
+            const h = 20 + Math.random() * 60;
+            const bGeo = new THREE.BoxGeometry(10, h, 10);
+            const bMat = new THREE.MeshStandardMaterial({ color: 0x0a0a0c });
+            const b = new THREE.Mesh(bGeo, bMat);
+            b.position.set(Math.random()*200-100, h/2, Math.random()*200-100);
+            b.castShadow = b.receiveShadow = true;
+            scene.add(b);
+            buildings.push(b);
+        }
+
+        // --- VIEWMODEL (Tactical Rifle) ---
+        const gunGroup = new THREE.Group();
+        const gunBody = new THREE.Mesh(new THREE.BoxGeometry(0.12, 0.18, 0.7), new THREE.MeshBasicMaterial({color: 0x000000}));
         
-        scene.appendChild(bullet);
+        // Neon Cyan/Magenta Trims
+        const cyanTrim = new THREE.Mesh(new THREE.BoxGeometry(0.13, 0.02, 0.71), new THREE.MeshBasicMaterial({color: 0x00ffff}));
+        cyanTrim.position.y = 0.08;
+        const magTrim = new THREE.Mesh(new THREE.BoxGeometry(0.13, 0.02, 0.71), new THREE.MeshBasicMaterial({color: 0xff00ff}));
+        magTrim.position.y = -0.08;
 
-        // Shoot forward
-        bullet.addEventListener('body-loaded', function () {
-          const force = new CANNON.Vec3(0, 5, -50); 
-          bullet.body.applyImpulse(force, new CANNON.Vec3(0,0,0));
+        gunGroup.add(gunBody, cyanTrim, magTrim);
+        gunGroup.position.set(0.4, -0.3, -0.6);
+        camera.add(gunGroup);
+
+        // --- ZOMBIE AI ---
+        const zombies = [];
+        class Zombie {
+            constructor() {
+                this.mesh = new THREE.Mesh(new THREE.BoxGeometry(1.2, 2.2, 1.2), new THREE.MeshStandardMaterial({color: 0x222222}));
+                this.mesh.position.set(Math.random()*60-30, 1.1, Math.random()*60-30);
+                this.hp = 100 + (state.round * 50);
+                this.speed = 0.05 + (state.round * 0.01);
+                scene.add(this.mesh);
+                zombies.push(this);
+            }
+
+            update() {
+                const dir = new THREE.Vector3().subVectors(camera.position, this.mesh.position).normalize();
+                this.mesh.position.add(dir.multiplyScalar(this.speed));
+                this.mesh.lookAt(camera.position.x, 1.1, camera.position.z);
+
+                if(this.mesh.position.distanceTo(camera.position) < 2) {
+                    state.hp -= 0.5; // Constant damage while touching
+                    updateUI();
+                }
+            }
+
+            hit(dmg) {
+                this.hp -= dmg;
+                if(this.hp <= 0) this.die();
+            }
+
+            die() {
+                scene.remove(this.mesh);
+                zombies.splice(zombies.indexOf(this), 1);
+                state.points += 100;
+                state.zombiesAlive--;
+                updateUI();
+            }
+        }
+
+        // --- GAMEPLAY FUNCTIONS ---
+        function updateUI() {
+            document.getElementById('points-counter').innerText = state.points;
+            document.getElementById('round-counter').innerText = state.round;
+            document.getElementById('hp-bar-fill').style.width = `${(state.hp/state.maxHp)*100}%`;
+            document.getElementById('hp-label').innerText = `HP: ${Math.ceil(state.hp)} / ${state.maxHp}`;
+            document.getElementById('ammo-counter').innerText = `${state.ammo} / ${state.reserve}`;
+        }
+
+        function shoot() {
+            if(state.ammo <= 0 || state.isReloading) return;
+            state.ammo--;
+            
+            // Recoil Animation
+            gunGroup.position.z += 0.05;
+            setTimeout(() => gunGroup.position.z -= 0.05, 50);
+
+            // Simple Raycast
+            const raycaster = new THREE.Raycaster();
+            raycaster.setFromCamera({x: 0, y: 0}, camera);
+            const hits = raycaster.intersectObjects(zombies.map(z => z.mesh));
+            
+            if(hits.length > 0) {
+                const z = zombies.find(zm => zm.mesh === hits[0].object);
+                let dmg = 50;
+                if(state.hasDouble) dmg *= 2;
+                z.hit(dmg);
+            }
+            updateUI();
+        }
+
+        // --- LOOP ---
+        function animate() {
+            requestAnimationFrame(animate);
+
+            if(controls.isLocked) {
+                // Wave System
+                if(state.zombiesAlive < 10 && state.spawnedThisRound < state.totalToSpawn) {
+                    new Zombie();
+                    state.zombiesAlive++;
+                    state.spawnedThisRound++;
+                }
+
+                if(state.zombiesAlive === 0 && state.spawnedThisRound >= state.totalToSpawn) {
+                    state.round++;
+                    state.spawnedThisRound = 0;
+                    state.totalToSpawn = Math.floor(state.totalToSpawn * 1.5);
+                    updateUI();
+                }
+
+                zombies.forEach(z => z.update());
+                
+                // BO4 Head Bob
+                const t = Date.now() * 0.005;
+                camera.position.y = 1.6 + Math.sin(t) * 0.02;
+            }
+
+            renderer.render(scene, camera);
+        }
+
+        window.addEventListener('mousedown', (e) => { if(e.button === 0) shoot(); });
+        window.addEventListener('keydown', (e) => {
+            if(e.code === 'KeyR' && !state.isReloading) {
+                state.isReloading = true;
+                setTimeout(() => {
+                    const needed = 30 - state.ammo;
+                    const fill = Math.min(needed, state.reserve);
+                    state.ammo += fill;
+                    state.reserve -= fill;
+                    state.isReloading = false;
+                    updateUI();
+                }, state.hasSpeed ? 1000 : 2500);
+            }
         });
-      });
+
+        animate();
+        updateUI();
     </script>
-  </body>
+</body>
 </html>
