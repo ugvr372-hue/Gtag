@@ -1,102 +1,110 @@
 <!DOCTYPE html>
 <html>
   <head>
-    <title>COD VR: Zombies Standalone</title>
+    <title>DinoVR: Black Ops Quest</title>
     <script src="https://aframe.io/releases/1.4.2/aframe.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/gh/c-frame/aframe-physics-system@v4.2.2/dist/aframe-physics-system.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/gh/donmccurdy/aframe-extras@v7.0.0/dist/aframe-extras.min.js"></script>
     <script src="https://unpkg.com/aframe-environment-component@1.3.2/dist/aframe-environment-component.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/gh/donmccurdy/aframe-extras@v6.1.1/dist/aframe-extras.min.js"></script>
   </head>
   <body>
-    <a-scene physics="debug: false; gravity: -9.8">
+    <a-scene renderer="antialias: true; colorManagement: true;">
       
       <a-assets>
-        <a-asset-item id="gun-model" src="https://cdn.glitch.global/your-gun-model.glb"></a-asset-item>
-        <a-asset-item id="mag-model" src="https://cdn.glitch.global/your-mag-model.glb"></a-asset-item>
+        <a-asset-item id="gunModel" src="https://cdn.jsdelivr.net/gh/KhronosGroup/glTF-Sample-Models/2.0/SciFiHelmet/glTF/SciFiHelmet.gltf"></a-asset-item>
       </a-assets>
 
-      <a-entity id="map" environment="preset: egypt; groundColor: #c2b280; dressingAmount: 100"></a-entity>
+      <a-entity id="environment" environment="preset: egypt; dressingAmount: 100; ground: spikes"></a-entity>
 
-      <a-entity id="rig" movement-controls="speed: 0.15; constrainToNavMesh: true">
-        <a-entity id="camera" camera position="0 1.6 0" look-controls>
-            <a-text id="money-display" value="Cash: $0" position="-0.5 -0.5 -1" scale="0.3 0.3 0.3" color="yellow"></a-text>
-        </a-entity>
+      <a-entity id="rig" movement-controls="controls: gamepad; speed: 0.2;">
+        <a-entity id="camera" camera position="0 1.6 0" look-controls></a-entity>
 
-        <a-entity hand-controls="hand: left; handModelStyle: highPoly; color: #ffcccc"
+        <a-entity id="leftHand" 
+                  hand-controls="hand: left; handModelStyle: highPoly;"
                   oculus-touch-controls="hand: left"
-                  player-move-logic>
+                  sprint-logic>
         </a-entity>
 
-        <a-entity hand-controls="hand: right; handModelStyle: highPoly; color: #ffcccc"
+        <a-entity id="rightHand" 
+                  hand-controls="hand: right; handModelStyle: highPoly;"
                   oculus-touch-controls="hand: right"
-                  gun-logic>
+                  crouch-logic
+                  gun-system>
         </a-entity>
 
-        <a-box id="holster" static-body="shape: box" 
-               position="0 0.8 -0.1" 
-               opacity="0" width="0.4" height="0.1" depth="0.2">
-          <a-entity id="gun" gltf-model="#gun-model" position="0 0 0" rotation="0 90 0"></a-entity>
+        <a-box id="holster" position="0 0.8 -0.2" width="0.3" height="0.1" depth="0.2" opacity="0.3" color="red">
+             <a-text value="WEAPON" align="center" position="0 0.1 0" scale="0.2 0.2 0.2"></a-text>
         </a-box>
       </a-entity>
 
     </a-scene>
 
     <script>
-      // --- GAME STATE ---
-      let cash = 0;
-      let isSprinting = false;
-      let isCrouching = false;
-      let weaponEquipped = false;
-
-      // --- MOVEMENT LOGIC (Thumbsticks) ---
-      AFRAME.registerComponent('player-move-logic', {
+      // 1. SPRINT LOGIC (Left Stick Click)
+      AFRAME.registerComponent('sprint-logic', {
         init: function () {
           this.el.addEventListener('thumbstickdown', () => {
-            // SPRINT: Left stick click
-            isSprinting = !isSprinting;
-            document.querySelector('#rig').setAttribute('movement-controls', 'speed', isSprinting ? 0.3 : 0.15);
+            const rig = document.querySelector('#rig');
+            rig.setAttribute('movement-controls', 'speed', 0.5); // Sprint speed
+            console.log("Sprinting...");
+          });
+          this.el.addEventListener('thumbstickup', () => {
+            const rig = document.querySelector('#rig');
+            rig.setAttribute('movement-controls', 'speed', 0.2); // Normal speed
           });
         }
       });
 
-      AFRAME.registerComponent('gun-logic', {
+      // 2. CROUCH LOGIC (Right Stick Click)
+      AFRAME.registerComponent('crouch-logic', {
         init: function () {
-          const rig = document.querySelector('#rig');
-          
-          // CROUCH: Right stick click
+          let isCrouched = false;
           this.el.addEventListener('thumbstickdown', () => {
-            isCrouching = !isCrouching;
-            rig.setAttribute('position', {x: rig.object3D.position.x, y: isCrouching ? -0.5 : 0, z: rig.object3D.position.z});
+            const camera = document.querySelector('#camera');
+            isCrouched = !isCrouched;
+            camera.setAttribute('position', isCrouched ? '0 1.0 0' : '0 1.6 0');
           });
+        }
+      });
 
-          // GRAB WEAPON: Check distance to holster and hold Grip
+      // 3. GUN & HOLSTER SYSTEM
+      AFRAME.registerComponent('gun-system', {
+        init: function () {
+          let hasGun = false;
+          const holster = document.querySelector('#holster');
+          const rightHand = this.el;
+
           this.el.addEventListener('gripdown', () => {
-             let handPos = this.el.object3D.position;
-             let holsterPos = document.querySelector('#holster').object3D.position;
-             
-             // Simple distance check for the "Waist"
-             if (handPos.distanceTo(holsterPos) < 0.5) {
-                document.querySelector('#gun').setAttribute('visible', 'false');
-                weaponEquipped = true;
-                // Add visual gun to hand here
-             }
+            // Check if hand is near waist (holster)
+            const handPos = rightHand.object3D.position;
+            const holsterPos = holster.object3D.position;
+            
+            if (!hasGun && handPos.distanceTo(holsterPos) < 0.6) {
+              // Attach Gun to Hand
+              const gun = document.createElement('a-entity');
+              gun.setAttribute('id', 'playerGun');
+              gun.setAttribute('gltf-model', '#gunModel');
+              gun.setAttribute('scale', '0.1 0.1 0.1');
+              gun.setAttribute('rotation', '0 180 0');
+              rightHand.appendChild(gun);
+              hasGun = true;
+              console.log("Weapon Equipped");
+            }
           });
 
-          // SHOOT: Trigger
           this.el.addEventListener('triggerdown', () => {
-            if(weaponEquipped) {
-               console.log("Bang!");
-               // Raycast logic for killing zombies goes here
+            if (hasGun) {
+              console.log("BANG!");
+              // Add Muzzle Flash / Sound here
             }
           });
         }
       });
 
-      // --- MAGAZINE SWAP LOGIC ---
-      // This triggers when the mag model hits the bottom of the gun
-      function handleReload() {
-          console.log("Mag Swapped!");
-          // Logic: Remove old mag, add full ammo
+      // 4. ECONOMY (Fake Money)
+      let money = 0;
+      function addKillMoney() {
+        money += 5;
+        console.log("Total Cash: $" + money);
       }
     </script>
   </body>
