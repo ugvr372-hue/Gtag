@@ -1,27 +1,23 @@
 <!DOCTYPE html>
 <html>
   <head>
-    <title>DinoVR: Black Ops 3/4 Realistic</title>
+    <title>DinoVR: Black Ops Realistic (Fixed)</title>
     <script src="https://aframe.io/releases/1.4.2/aframe.min.js"></script>
     <script src="https://cdn.jsdelivr.net/gh/donmccurdy/aframe-extras@v7.0.0/dist/aframe-extras.min.js"></script>
     <script src="https://unpkg.com/aframe-environment-component@1.3.2/dist/aframe-environment-component.min.js"></script>
   </head>
   <body>
-    <a-scene renderer="antialias: true; colorManagement: true;">
+    <a-scene loading-screen="enabled: false" renderer="antialias: true; colorManagement: true;">
       
+      <a-assets></a-assets>
+
       <a-entity id="main-menu" position="0 1.5 -2">
         <a-text value="SELECT MAP & DIFFICULTY" align="center" position="0 1 0" color="yellow"></a-text>
         <a-entity id="map-group" position="0 0.5 0">
-            <a-box id="btn-desert" position="-0.8 0 0" width="0.4" height="0.2" depth="0.1" color="#edc9af" class="clickable"><a-text value="DESERT" align="center" scale="0.2 0.2 0.2" position="0 0 0.06"></a-text></a-box>
-            <a-box id="btn-city" position="-0.3 0 0" width="0.4" height="0.2" depth="0.1" color="#555" class="clickable"><a-text value="CITY" align="center" scale="0.2 0.2 0.2" position="0 0 0.06"></a-text></a-box>
-            <a-box id="btn-plane" position="0.3 0 0" width="0.4" height="0.2" depth="0.1" color="silver" class="clickable"><a-text value="PLANE" align="center" scale="0.2 0.2 0.2" position="0 0 0.06"></a-text></a-box>
-            <a-box id="btn-beach" position="0.8 0 0" width="0.4" height="0.2" depth="0.1" color="#0077be" class="clickable"><a-text value="BEACH" align="center" scale="0.2 0.2 0.2" position="0 0 0.06"></a-text></a-box>
+            <a-box id="btn-desert" position="-0.4 0 0" width="0.3" height="0.15" color="#edc9af" class="clickable"><a-text value="DESERT" align="center" scale="0.2 0.2 0.2" position="0 0 0.06"></a-text></a-box>
+            <a-box id="btn-city" position="0.4 0 0" width="0.3" height="0.15" color="#555" class="clickable"><a-text value="CITY" align="center" scale="0.2 0.2 0.2" position="0 0 0.06"></a-text></a-box>
         </a-entity>
-        <a-entity id="diff-group" position="0 0 0">
-            <a-box id="diff-easy" position="-0.6 0 0" width="0.3" height="0.15" depth="0.1" color="green" class="clickable"><a-text value="EASY" align="center" scale="0.2 0.2 0.2" position="0 0 0.06"></a-text></a-box>
-            <a-box id="diff-hard" position="0 0 0" width="0.3" height="0.15" depth="0.1" color="red" class="clickable"><a-text value="HARD" align="center" scale="0.2 0.2 0.2" position="0 0 0.06"></a-text></a-box>
-            <a-box id="diff-endless" position="0.6 0 0" width="0.3" height="0.15" depth="0.1" color="purple" class="clickable"><a-text value="ENDLESS" align="center" scale="0.2 0.2 0.2" position="0 0 0.06"></a-text></a-box>
-        </a-entity>
+        <a-text value="CLICK TO CALIBRATE & START" position="0 -0.5 0" align="center" scale="0.5 0.5 0.5" color="white"></a-text>
       </a-entity>
 
       <a-entity id="world" environment="preset: egypt; dressingAmount: 20"></a-entity>
@@ -32,129 +28,85 @@
             <a-text id="money-ui" value="$0" position="0.5 0.5 -1" color="green"></a-text>
         </a-entity>
 
-        <a-entity id="leftHand" oculus-touch-controls="hand: left"></a-entity>
-
-        <a-entity id="rightHand" oculus-touch-controls="hand: right" gun-shoot-logic raycaster="objects: .zombie; showLine: false; far: 50">
-            <a-entity id="gun-model" position="0 -0.05 -0.1" rotation="0 0 0">
-                <a-box width="0.035" height="0.05" depth="0.22" color="#222"></a-box> 
-                <a-box width="0.03" height="0.01" depth="0.22" color="#111" position="0 0.025 0"></a-box>
-                <a-box width="0.032" height="0.11" depth="0.045" color="#1a1a1a" position="0 -0.06 0.05" rotation="-15 0 0"></a-box>
-                <a-torus radius="0.015" tube="0.003" arc="180" rotation="0 90 0" position="0 -0.02 0.02" color="#111"></a-torus>
-                <a-circle radius="0.008" color="black" position="0 0 -0.111" rotation="0 180 0"></a-circle>
-            </a-entity>
+        <a-entity id="rightHand" oculus-touch-controls="hand: right" gun-shoot-logic raycaster="objects: .zombie; far: 50">
+            <a-entity id="gun-model" position="0 -0.05 -0.1">
+                <a-box width="0.035" height="0.05" depth="0.22" color="#222"></a-box> <a-box width="0.032" height="0.11" depth="0.045" color="#1a1a1a" position="0 -0.06 0.05" rotation="-15 0 0"></a-box> <a-circle radius="0.008" color="black" position="0 0 -0.111" rotation="0 180 0"></a-circle> </a-entity>
         </a-entity>
-      </a-entity>
 
+        <a-entity id="leftHand" oculus-touch-controls="hand: left"></a-entity>
+      </a-entity>
     </a-scene>
 
     <script>
-      let money = 0;
+      let userHeight = 1.6;
       let selectedMap = false;
-      let selectedDiff = false;
-      let isCrouched = false;
 
-      // MENU HANDLERS
-      const world = document.querySelector('#world');
-      function checkStart() {
-        if(selectedMap && selectedDiff) {
-            document.querySelector('#rig').setAttribute('movement-controls', 'speed: 0.2');
-            document.querySelector('#main-menu').setAttribute('visible', 'false');
-            startSpawning();
-        }
-      }
+      // 1. HEIGHT CALIBRATOR & START
+      document.querySelectorAll('.clickable').forEach(btn => {
+          btn.addEventListener('click', () => {
+              // Calibrate height based on where your headset is RIGHT NOW
+              const cam = document.querySelector('#camera');
+              userHeight = cam.getAttribute('position').y;
+              
+              document.querySelector('#rig').setAttribute('movement-controls', 'speed: 0.2');
+              document.querySelector('#main-menu').setAttribute('visible', 'false');
+              selectedMap = true;
+              startSpawning();
+              console.log("Height Calibrated to: " + userHeight);
+          });
+      });
 
-      document.querySelector('#btn-desert').addEventListener('click', () => { world.setAttribute('environment', 'preset: egypt'); selectedMap = true; checkStart(); });
-      document.querySelector('#btn-city').addEventListener('click', () => { world.setAttribute('environment', 'preset: contact'); selectedMap = true; checkStart(); });
-      document.querySelector('#btn-plane').addEventListener('click', () => { world.setAttribute('environment', 'preset: tron'); selectedMap = true; checkStart(); });
-      document.querySelector('#btn-beach').addEventListener('click', () => { world.setAttribute('environment', 'preset: forest'); selectedMap = true; checkStart(); });
-
-      document.querySelector('#diff-easy').addEventListener('click', () => { selectedDiff = "easy"; checkStart(); });
-      document.querySelector('#diff-hard').addEventListener('click', () => { selectedDiff = "hard"; checkStart(); });
-      document.querySelector('#diff-endless').addEventListener('click', () => { selectedDiff = "endless"; checkStart(); });
-
-      // GUN & CROUCH LOGIC
+      // 2. GUN & CROUCH LOGIC
       AFRAME.registerComponent('gun-shoot-logic', {
         init: function () {
-          // SHOOT (Infinite Ammo)
+          // INFINITE AMMO SHOOT
           this.el.addEventListener('triggerdown', () => {
-            const raycaster = this.el.components.raycaster;
-            const intersection = raycaster.getIntersection(document.querySelector('.zombie'));
+            const ray = this.el.components.raycaster;
+            const hit = ray.getIntersection(document.querySelector('.zombie'));
             
-            // Muzzle Flash Effect
-            const flash = document.createElement('a-light');
-            flash.setAttribute('type', 'point');
-            flash.setAttribute('color', 'orange');
-            flash.setAttribute('intensity', '2');
-            flash.setAttribute('position', '0 0 -0.3');
-            this.el.appendChild(flash);
-            setTimeout(() => this.el.removeChild(flash), 50);
-
-            if (intersection) {
-              const zombie = intersection.el;
-              zombie.emit('die'); // Trigger death animation/removal
-              money += 5;
-              document.querySelector('#money-ui').setAttribute('value', '$' + money);
+            if (hit) {
+              hit.el.emit('die');
+              // Update money logic here
             }
           });
 
-          // CROUCH (Right Stick Click)
+          // CROUCH (Toggle based on calibrated height)
           this.el.addEventListener('thumbstickdown', () => {
             const cam = document.querySelector('#camera');
-            isCrouched = !isCrouched;
-            cam.setAttribute('position', isCrouched ? '0 0.8 0' : '0 1.6 0');
+            let currentY = cam.getAttribute('position').y;
+            // If standing, go to half height. If crouching, go back to calibrated height.
+            cam.setAttribute('position', {x: 0, y: currentY > (userHeight * 0.7) ? userHeight / 2 : userHeight, z: 0});
           });
         }
       });
 
-      // ZOMBIE AI COMPONENT
+      // ZOMBIE AI (With simple staggering)
       AFRAME.registerComponent('zombie-ai', {
         init: function () {
           this.el.classList.add('zombie');
-          this.target = document.querySelector('#camera');
-          
-          // Death Listener
-          this.el.addEventListener('die', () => {
-            this.el.parentNode.removeChild(this.el);
-          });
-
-          // Stagger Animation
-          this.el.setAttribute('animation__stagger', {
-            property: 'rotation',
-            from: '-5 0 -5', to: '5 0 5', dur: 1200, dir: 'alternate', loop: true
-          });
+          this.el.addEventListener('die', () => this.el.parentNode.removeChild(this.el));
+          this.el.setAttribute('animation', {property: 'rotation', from: '-5 0 -5', to: '5 0 5', dur: 1000, dir: 'alternate', loop: true});
         },
         tick: function () {
           if (!selectedMap) return;
           let playerPos = new THREE.Vector3();
-          this.target.object3D.getWorldPosition(playerPos);
-          let zombiePos = this.el.object3D.position;
-
+          document.querySelector('#camera').object3D.getWorldPosition(playerPos);
           this.el.object3D.lookAt(playerPos.x, 0, playerPos.z);
-          let dir = new THREE.Vector3().subVectors(playerPos, zombiePos).normalize();
-          this.el.object3D.position.addScaledVector(dir, 0.03);
+          let dir = new THREE.Vector3().subVectors(playerPos, this.el.object3D.position).normalize();
+          this.el.object3D.position.addScaledVector(dir, 0.02);
         }
       });
 
       function spawnZombie() {
+        if (!selectedMap) return;
         const z = document.createElement('a-entity');
-        const angle = Math.random() * Math.PI * 2;
-        const x = Math.cos(angle) * 15;
-        const zPos = Math.sin(angle) * 15;
-        z.setAttribute('position', `${x} 0 ${zPos}`);
+        z.setAttribute('position', `${(Math.random()-0.5)*20} 0 -15`);
         z.setAttribute('zombie-ai', '');
-        
-        // Realistic Zombie Body
-        z.innerHTML = `
-          <a-box width="0.4" height="1.7" depth="0.2" color="#3a4d32" material="roughness: 1">
-            <a-box width="0.15" height="0.15" depth="0.15" color="#5a2d2d" position="0 0.8 0"></a-box> <a-box width="0.1" height="0.8" depth="0.1" color="#3a4d32" position="0.25 0.3 -0.3" rotation="-90 0 0"></a-box> <a-box width="0.1" height="0.8" depth="0.1" color="#3a4d32" position="-0.25 0.3 -0.3" rotation="-90 0 0"></a-box>
-          </a-box>
-        `;
+        z.innerHTML = `<a-box width="0.5" height="1.8" depth="0.2" color="green"></a-box>`;
         document.querySelector('a-scene').appendChild(z);
       }
 
-      function startSpawning() {
-        setInterval(spawnZombie, 3000);
-      }
+      function startSpawning() { setInterval(spawnZombie, 3000); }
     </script>
   </body>
 </html>
