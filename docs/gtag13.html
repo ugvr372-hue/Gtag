@@ -1,22 +1,22 @@
 <!DOCTYPE html>
 <html>
   <head>
-    <title>DinoVR: Black Ops Final</title>
+    <title>DinoVR: Black Ops - Blood & Bullets</title>
     <script src="https://aframe.io/releases/1.4.2/aframe.min.js"></script>
     <script src="https://cdn.jsdelivr.net/gh/donmccurdy/aframe-extras@v7.0.0/dist/aframe-extras.min.js"></script>
     <script src="https://unpkg.com/aframe-environment-component@1.3.2/dist/aframe-environment-component.min.js"></script>
   </head>
   <body style="background: #000;">
-    <a-scene loading-screen="enabled: false" renderer="antialias: true;">
+    <a-scene loading-screen="enabled: false">
       
       <a-entity id="main-menu" position="0 1.5 -2">
-        <a-text value="BLACK OPS VR" align="center" position="0 1 0" color="red" font="monoid"></a-text>
-        <a-box id="start-btn" position="0 0.4 0" width="1" height="0.4" color="#333" class="clickable">
-            <a-text value="CLICK TO START" align="center" position="0 0 0.06" scale="0.5 0.5 0.5"></a-text>
+        <a-text value="ZOMBIES: SURVIVAL" align="center" position="0 1 0" color="red" font="monoid"></a-text>
+        <a-box id="start-btn" position="0 0.4 0" width="1" height="0.4" color="#222" class="clickable">
+            <a-text value="START GAME" align="center" position="0 0 0.06" scale="0.5 0.5 0.5"></a-text>
         </a-box>
       </a-entity>
 
-      <a-entity id="world" environment="preset: egypt; dressingAmount: 20"></a-entity>
+      <a-entity id="world" environment="preset: egypt; dressingAmount: 10"></a-entity>
 
       <a-entity id="rig" movement-controls="controls: gamepad; speed: 0;">
         <a-entity id="camera" camera position="0 1.6 0" look-controls>
@@ -24,22 +24,17 @@
             <a-text id="money-ui" value="CASH: $0" position="0.5 0.5 -1" color="yellow" scale="0.4 0.4 0.4"></a-text>
         </a-entity>
 
-        <a-entity id="leftHand"></a-entity>
-
-        <a-entity id="rightHand" 
-                  oculus-touch-controls="hand: right" 
-                  raycaster="objects: .zombie-target; far: 100; showLine: false"
-                  gun-logic>
-            
+        <a-entity id="rightHand" oculus-touch-controls="hand: right" raycaster="objects: .zombie-target; far: 100" gun-logic>
             <a-entity id="gun-model" position="0 -0.05 -0.1">
-                <a-box width="0.03" height="0.05" depth="0.25" color="#111"></a-box> <a-box width="0.03" height="0.12" depth="0.04" color="#1a1a1a" position="0 -0.06 0.06" rotation="-20 0 0"></a-box> <a-circle radius="0.008" color="black" position="0 0.01 -0.126" rotation="0 180 0"></a-circle> <a-entity id="muzzle-flash" position="0 0.01 -0.15" visible="false">
+                <a-box width="0.03" height="0.05" depth="0.25" color="#111"></a-box> 
+                <a-box width="0.03" height="0.12" depth="0.04" color="#111" position="0 -0.06 0.06" rotation="-20 0 0"></a-box>
+                <a-entity id="muzzle-flash" position="0 0.01 -0.15" visible="false">
                     <a-light type="point" color="orange" intensity="3" distance="5"></a-light>
-                    <a-sphere radius="0.05" color="yellow" material="emissive: yellow; emissiveIntensity: 2"></a-sphere>
+                    <a-sphere radius="0.04" color="yellow"></a-sphere>
                 </a-entity>
             </a-entity>
         </a-entity>
       </a-entity>
-
     </a-scene>
 
     <script>
@@ -51,10 +46,10 @@
         gameActive = true;
         document.querySelector('#rig').setAttribute('movement-controls', 'speed: 0.2');
         document.querySelector('#main-menu').setAttribute('visible', 'false');
-        setInterval(spawnZombie, 2500);
+        setInterval(spawnZombie, 2000);
       });
 
-      // GUN LOGIC
+      // GUN & SHOOTING LOGIC
       AFRAME.registerComponent('gun-logic', {
         init: function () {
           const flash = document.querySelector('#muzzle-flash');
@@ -63,51 +58,86 @@
           this.el.addEventListener('triggerdown', () => {
             if (!gameActive) return;
 
-            // 1. FLASH EFFECT
+            // 1. Muzzle Flash & Recoil
             flash.setAttribute('visible', 'true');
-            setTimeout(() => flash.setAttribute('visible', 'false'), 60);
-
-            // 2. SHOOTING LOGIC
-            // Get all objects the raycaster is hitting
+            setTimeout(() => flash.setAttribute('visible', 'false'), 50);
+            
+            // 2. Raycast Check
             const intersections = ray.intersections;
             if (intersections.length > 0) {
+                const hitPoint = intersections[0].point;
                 const target = intersections[0].el;
+
                 if (target.classList.contains('zombie-target')) {
-                    // Kill the parent zombie entity
-                    target.closest('.zombie-root').emit('die');
+                    createBloodSplatter(hitPoint);
+                    target.closest('.zombie-root').emit('kill-zombie');
                     cash += 5;
                     document.querySelector('#money-ui').setAttribute('value', 'CASH: $' + cash);
                 }
             }
           });
-
-          // CROUCH (Right Stick Click)
-          this.el.addEventListener('thumbstickdown', () => {
-            const cam = document.querySelector('#camera');
-            let isCrouched = cam.getAttribute('position').y < 1.0;
-            cam.setAttribute('position', isCrouched ? '0 1.6 0' : '0 0.8 0');
-          });
         }
       });
 
-      // ZOMBIE LOGIC
+      // BLOOD SPLATTER SYSTEM
+      function createBloodSplatter(pos) {
+        for (let i = 0; i < 6; i++) {
+          const drop = document.createElement('a-sphere');
+          drop.setAttribute('radius', '0.03');
+          drop.setAttribute('color', 'red');
+          drop.setAttribute('position', pos);
+          
+          // Animate the blood "bursting" out
+          const x = (Math.random() - 0.5) * 1;
+          const y = (Math.random()) * 1;
+          const z = (Math.random() - 0.5) * 1;
+          
+          drop.setAttribute('animation', {
+            property: 'position',
+            to: `${pos.x + x} ${pos.y + y} ${pos.z + z}`,
+            dur: 300,
+            easing: 'easeOutQuad'
+          });
+          
+          drop.setAttribute('animation__fade', {
+            property: 'scale',
+            to: '0 0 0',
+            dur: 300,
+            delay: 100
+          });
+
+          document.querySelector('a-scene').appendChild(drop);
+          setTimeout(() => drop.parentNode.removeChild(drop), 400);
+        }
+      }
+
+      // ZOMBIE AI & DEATH
       AFRAME.registerComponent('zombie-ai', {
         init: function () {
-          this.el.addEventListener('die', () => {
-            this.el.parentNode.removeChild(this.el);
+          this.isDead = false;
+          this.el.addEventListener('kill-zombie', () => {
+            this.isDead = true;
+            // Play fall-over animation
+            this.el.setAttribute('animation', {
+                property: 'rotation',
+                to: '-90 0 0',
+                dur: 300
+            });
+            setTimeout(() => { if(this.el.parentNode) this.el.parentNode.removeChild(this.el); }, 500);
           });
         },
         tick: function () {
-          if (!gameActive) return;
+          if (!gameActive || this.isDead) return;
           let playerPos = new THREE.Vector3();
           document.querySelector('#camera').object3D.getWorldPosition(playerPos);
           this.el.object3D.lookAt(playerPos.x, 0, playerPos.z);
           let dir = new THREE.Vector3().subVectors(playerPos, this.el.object3D.position).normalize();
-          this.el.object3D.position.addScaledVector(dir, 0.04);
+          this.el.object3D.position.addScaledVector(dir, 0.05);
         }
       });
 
       function spawnZombie() {
+        if (!gameActive) return;
         const z = document.createElement('a-entity');
         z.classList.add('zombie-root');
         const angle = Math.random() * Math.PI * 2;
@@ -117,10 +147,9 @@
         z.setAttribute('position', `${x} 0 ${zPos}`);
         z.setAttribute('zombie-ai', '');
         
-        // The .zombie-target class is on the box itself so the raycaster sees it
         z.innerHTML = `
-          <a-box class="zombie-target" width="0.6" height="1.8" depth="0.3" color="#2d3319">
-            <a-box width="0.2" height="0.2" depth="0.2" color="red" position="0 0.8 0.1"></a-box>
+          <a-box class="zombie-target" width="0.6" height="1.8" depth="0.3" color="#3d4021" material="roughness: 1">
+            <a-box width="0.2" height="0.2" depth="0.2" color="#5a2d2d" position="0 0.8 0.1"></a-box>
           </a-box>
         `;
         document.querySelector('a-scene').appendChild(z);
