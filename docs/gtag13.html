@@ -1,111 +1,102 @@
 <!DOCTYPE html>
 <html>
   <head>
-    <title>DinoVR: Black Ops Quest</title>
+    <title>DinoVR: Black Ops 3/4</title>
     <script src="https://aframe.io/releases/1.4.2/aframe.min.js"></script>
     <script src="https://cdn.jsdelivr.net/gh/donmccurdy/aframe-extras@v7.0.0/dist/aframe-extras.min.js"></script>
     <script src="https://unpkg.com/aframe-environment-component@1.3.2/dist/aframe-environment-component.min.js"></script>
   </head>
   <body>
-    <a-scene renderer="antialias: true; colorManagement: true;">
+    <a-scene renderer="antialias: true">
       
-      <a-assets>
-        <a-asset-item id="gunModel" src="https://cdn.jsdelivr.net/gh/KhronosGroup/glTF-Sample-Models/2.0/SciFiHelmet/glTF/SciFiHelmet.gltf"></a-asset-item>
-      </a-assets>
+      <a-entity id="menu" position="0 1.5 -2">
+        <a-text value="SELECT MAP" align="center" position="0 0.8 0" color="white"></a-text>
+        
+        <a-box id="btn-desert" position="-0.6 0.4 0" width="0.5" height="0.2" depth="0.1" color="#edc9af" class="clickable">
+            <a-text value="DESERT" align="center" scale="0.3 0.3 0.3" position="0 0 0.06"></a-text>
+        </a-box>
+        <a-box id="btn-city" position="0 0.4 0" width="0.5" height="0.2" depth="0.1" color="#555" class="clickable">
+            <a-text value="CITY" align="center" scale="0.3 0.3 0.3" position="0 0 0.06"></a-text>
+        </a-box>
+        <a-box id="btn-beach" position="0.6 0.4 0" width="0.5" height="0.2" depth="0.1" color="#0077be" class="clickable">
+            <a-text value="BEACH" align="center" scale="0.3 0.3 0.3" position="0 0 0.06"></a-text>
+        </a-box>
+      </a-entity>
 
-      <a-entity id="environment" environment="preset: egypt; dressingAmount: 100; ground: spikes"></a-entity>
+      <a-entity id="world" environment="preset: egypt; dressingAmount: 50"></a-entity>
 
       <a-entity id="rig" movement-controls="controls: gamepad; speed: 0.2;">
-        <a-entity id="camera" camera position="0 1.6 0" look-controls></a-entity>
-
-        <a-entity id="leftHand" 
-                  hand-controls="hand: left; handModelStyle: highPoly;"
-                  oculus-touch-controls="hand: left"
-                  sprint-logic>
+        <a-entity id="camera" camera position="0 1.6 0" look-controls>
+            <a-cursor fuse="false" raycaster="objects: .clickable"></a-cursor>
+            
+            <a-box id="holster" position="0 -0.6 -0.1" width="0.2" height="0.1" depth="0.2" color="red" opacity="0.5">
+                <a-text value="GRAB" align="center" scale="0.1 0.1 0.1" position="0 0.06 0"></a-text>
+            </a-box>
         </a-entity>
 
-        <a-entity id="rightHand" 
-                  hand-controls="hand: right; handModelStyle: highPoly;"
-                  oculus-touch-controls="hand: right"
-                  crouch-logic
-                  gun-system>
-        </a-entity>
+        <a-entity id="leftHand" hand-controls="hand: left; handModelStyle: highPoly" oculus-touch-controls="hand: left" sprint-logic></a-entity>
 
-        <a-box id="holster" position="0 0.8 -0.2" width="0.3" height="0.1" depth="0.2" opacity="0.3" color="red">
-             <a-text value="WEAPON" align="center" position="0 0.1 0" scale="0.2 0.2 0.2"></a-text>
-        </a-box>
+        <a-entity id="rightHand" hand-controls="hand: right; handModelStyle: highPoly" oculus-touch-controls="hand: right" crouch-logic gun-logic></a-entity>
       </a-entity>
 
     </a-scene>
 
     <script>
-      // 1. SPRINT LOGIC (Left Stick Click)
-      AFRAME.registerComponent('sprint-logic', {
-        init: function () {
-          this.el.addEventListener('thumbstickdown', () => {
-            const rig = document.querySelector('#rig');
-            rig.setAttribute('movement-controls', 'speed', 0.5); // Sprint speed
-            console.log("Sprinting...");
-          });
-          this.el.addEventListener('thumbstickup', () => {
-            const rig = document.querySelector('#rig');
-            rig.setAttribute('movement-controls', 'speed', 0.2); // Normal speed
-          });
-        }
-      });
+      // 1. MAP SWITCHER LOGIC
+      const world = document.querySelector('#world');
+      document.querySelector('#btn-desert').addEventListener('click', () => world.setAttribute('environment', 'preset: egypt'));
+      document.querySelector('#btn-city').addEventListener('click', () => world.setAttribute('environment', 'preset: contact'));
+      document.querySelector('#btn-beach').addEventListener('click', () => world.setAttribute('environment', 'preset: forest'));
 
-      // 2. CROUCH LOGIC (Right Stick Click)
-      AFRAME.registerComponent('crouch-logic', {
-        init: function () {
-          let isCrouched = false;
-          this.el.addEventListener('thumbstickdown', () => {
-            const camera = document.querySelector('#camera');
-            isCrouched = !isCrouched;
-            camera.setAttribute('position', isCrouched ? '0 1.0 0' : '0 1.6 0');
-          });
-        }
-      });
-
-      // 3. GUN & HOLSTER SYSTEM
-      AFRAME.registerComponent('gun-system', {
+      // 2. GUN GRAB & SHOOT LOGIC
+      AFRAME.registerComponent('gun-logic', {
         init: function () {
           let hasGun = false;
           const holster = document.querySelector('#holster');
-          const rightHand = this.el;
-
+          
           this.el.addEventListener('gripdown', () => {
-            // Check if hand is near waist (holster)
-            const handPos = rightHand.object3D.position;
-            const holsterPos = holster.object3D.position;
-            
-            if (!hasGun && handPos.distanceTo(holsterPos) < 0.6) {
-              // Attach Gun to Hand
-              const gun = document.createElement('a-entity');
-              gun.setAttribute('id', 'playerGun');
-              gun.setAttribute('gltf-model', '#gunModel');
-              gun.setAttribute('scale', '0.1 0.1 0.1');
-              gun.setAttribute('rotation', '0 180 0');
-              rightHand.appendChild(gun);
+            // Check distance between right hand and the waist holster
+            let handPos = new THREE.Vector3();
+            this.el.object3D.getWorldPosition(handPos);
+            let holsterPos = new THREE.Vector3();
+            holster.object3D.getWorldPosition(holsterPos);
+
+            if (!hasGun && handPos.distanceTo(holsterPos) < 0.4) {
+              // SPAWN GUN IN HAND
+              const gun = document.createElement('a-box'); // Using a Box as placeholder (No more heads!)
+              gun.setAttribute('id', 'active-gun');
+              gun.setAttribute('width', '0.05'); gun.setAttribute('height', '0.1'); gun.setAttribute('depth', '0.3');
+              gun.setAttribute('color', 'black');
+              gun.setAttribute('position', '0 0 -0.1');
+              this.el.appendChild(gun);
               hasGun = true;
-              console.log("Weapon Equipped");
+              holster.setAttribute('visible', 'false'); // Hide holster when gun is out
             }
           });
 
           this.el.addEventListener('triggerdown', () => {
-            if (hasGun) {
-              console.log("BANG!");
-              // Add Muzzle Flash / Sound here
-            }
+            if(hasGun) { console.log("BANG!"); /* Add sound/bullets here */ }
           });
         }
       });
 
-      // 4. ECONOMY (Fake Money)
-      let money = 0;
-      function addKillMoney() {
-        money += 5;
-        console.log("Total Cash: $" + money);
-      }
+      // 3. SPRINT & CROUCH
+      AFRAME.registerComponent('sprint-logic', {
+        init: function() {
+          this.el.addEventListener('thumbstickdown', () => document.querySelector('#rig').setAttribute('movement-controls', 'speed: 0.5'));
+          this.el.addEventListener('thumbstickup', () => document.querySelector('#rig').setAttribute('movement-controls', 'speed: 0.2'));
+        }
+      });
+
+      AFRAME.registerComponent('crouch-logic', {
+        init: function() {
+          let isCrouched = false;
+          this.el.addEventListener('thumbstickdown', () => {
+            isCrouched = !isCrouched;
+            document.querySelector('#camera').setAttribute('position', isCrouched ? '0 0.8 0' : '0 1.6 0');
+          });
+        }
+      });
     </script>
   </body>
 </html>
