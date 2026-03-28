@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html>
   <head>
-    <title>DinoVR: Black Ops 3/4</title>
+    <title>DinoVR: Black Ops Standalone</title>
     <script src="https://aframe.io/releases/1.4.2/aframe.min.js"></script>
     <script src="https://cdn.jsdelivr.net/gh/donmccurdy/aframe-extras@v7.0.0/dist/aframe-extras.min.js"></script>
     <script src="https://unpkg.com/aframe-environment-component@1.3.2/dist/aframe-environment-component.min.js"></script>
@@ -9,91 +9,82 @@
   <body>
     <a-scene renderer="antialias: true">
       
-      <a-entity id="menu" position="0 1.5 -2">
-        <a-text value="SELECT MAP" align="center" position="0 0.8 0" color="white"></a-text>
+      <a-entity id="main-menu" position="0 1.5 -2">
+        <a-text id="menu-title" value="SELECT MAP & DIFFICULTY" align="center" position="0 1 0" color="yellow"></a-text>
         
-        <a-box id="btn-desert" position="-0.6 0.4 0" width="0.5" height="0.2" depth="0.1" color="#edc9af" class="clickable">
-            <a-text value="DESERT" align="center" scale="0.3 0.3 0.3" position="0 0 0.06"></a-text>
-        </a-box>
-        <a-box id="btn-city" position="0 0.4 0" width="0.5" height="0.2" depth="0.1" color="#555" class="clickable">
-            <a-text value="CITY" align="center" scale="0.3 0.3 0.3" position="0 0 0.06"></a-text>
-        </a-box>
-        <a-box id="btn-beach" position="0.6 0.4 0" width="0.5" height="0.2" depth="0.1" color="#0077be" class="clickable">
-            <a-text value="BEACH" align="center" scale="0.3 0.3 0.3" position="0 0 0.06"></a-text>
-        </a-box>
+        <a-entity id="map-group" position="0 0.5 0">
+            <a-box id="btn-desert" position="-0.8 0 0" width="0.4" height="0.2" depth="0.1" color="#edc9af" class="clickable"><a-text value="DESERT" align="center" scale="0.2 0.2 0.2" position="0 0 0.06"></a-text></a-box>
+            <a-box id="btn-city" position="-0.3 0 0" width="0.4" height="0.2" depth="0.1" color="#555" class="clickable"><a-text value="CITY" align="center" scale="0.2 0.2 0.2" position="0 0 0.06"></a-text></a-box>
+            <a-box id="btn-plane" position="0.3 0 0" width="0.4" height="0.2" depth="0.1" color="silver" class="clickable"><a-text value="PLANE" align="center" scale="0.2 0.2 0.2" position="0 0 0.06"></a-text></a-box>
+            <a-box id="btn-beach" position="0.8 0 0" width="0.4" height="0.2" depth="0.1" color="#0077be" class="clickable"><a-text value="BEACH" align="center" scale="0.2 0.2 0.2" position="0 0 0.06"></a-text></a-box>
+        </a-entity>
+
+        <a-entity id="diff-group" position="0 0 0">
+            <a-box id="diff-easy" position="-0.6 0 0" width="0.3" height="0.15" depth="0.1" color="green" class="clickable"><a-text value="EASY" align="center" scale="0.2 0.2 0.2" position="0 0 0.06"></a-text></a-box>
+            <a-box id="diff-hard" position="0 0 0" width="0.3" height="0.15" depth="0.1" color="red" class="clickable"><a-text value="HARD" align="center" scale="0.2 0.2 0.2" position="0 0 0.06"></a-text></a-box>
+            <a-box id="diff-endless" position="0.6 0 0" width="0.3" height="0.15" depth="0.1" color="purple" class="clickable"><a-text value="ENDLESS" align="center" scale="0.2 0.2 0.2" position="0 0 0.06"></a-text></a-box>
+        </a-entity>
       </a-entity>
 
-      <a-entity id="world" environment="preset: egypt; dressingAmount: 50"></a-entity>
+      <a-entity id="world" environment="preset: egypt; dressingAmount: 0"></a-entity>
 
-      <a-entity id="rig" movement-controls="controls: gamepad; speed: 0.2;">
+      <a-entity id="rig" movement-controls="controls: gamepad; speed: 0;">
         <a-entity id="camera" camera position="0 1.6 0" look-controls>
             <a-cursor fuse="false" raycaster="objects: .clickable"></a-cursor>
             
-            <a-box id="holster" position="0 -0.6 -0.1" width="0.2" height="0.1" depth="0.2" color="red" opacity="0.5">
-                <a-text value="GRAB" align="center" scale="0.1 0.1 0.1" position="0 0.06 0"></a-text>
+            <a-box id="mag-pouch" position="0 -0.6 -0.1" width="0.15" height="0.1" depth="0.1" color="blue" opacity="0.5">
+                <a-text value="MAGS" align="center" scale="0.1 0.1 0.1" position="0 0.06 0"></a-text>
             </a-box>
         </a-entity>
 
-        <a-entity id="leftHand" hand-controls="hand: left; handModelStyle: highPoly" oculus-touch-controls="hand: left" sprint-logic></a-entity>
+        <a-entity id="leftHand" hand-controls="hand: left; handModelStyle: highPoly" oculus-touch-controls="hand: left"></a-entity>
 
-        <a-entity id="rightHand" hand-controls="hand: right; handModelStyle: highPoly" oculus-touch-controls="hand: right" crouch-logic gun-logic></a-entity>
+        <a-entity id="rightHand" oculus-touch-controls="hand: right" gun-system>
+            <a-box width="0.04" height="0.06" depth="0.25" color="#222" position="0 0 -0.1"></a-box>
+            <a-box width="0.035" height="0.12" depth="0.04" color="#111" position="0 -0.05 0" rotation="-20 0 0"></a-box>
+            <a-cylinder radius="0.01" height="0.02" color="black" position="0 0 -0.22" rotation="90 0 0"></a-cylinder>
+        </a-entity>
       </a-entity>
 
     </a-scene>
 
     <script>
-      // 1. MAP SWITCHER LOGIC
+      let selectedMap = false;
+      let selectedDiff = false;
+
+      // START GAME FUNCTION
+      function checkStart() {
+        if(selectedMap && selectedDiff) {
+            document.querySelector('#rig').setAttribute('movement-controls', 'speed: 0.2');
+            document.querySelector('#main-menu').setAttribute('visible', 'false');
+            console.log("Game Started!");
+        }
+      }
+
+      // MENU CLICKS
       const world = document.querySelector('#world');
-      document.querySelector('#btn-desert').addEventListener('click', () => world.setAttribute('environment', 'preset: egypt'));
-      document.querySelector('#btn-city').addEventListener('click', () => world.setAttribute('environment', 'preset: contact'));
-      document.querySelector('#btn-beach').addEventListener('click', () => world.setAttribute('environment', 'preset: forest'));
+      document.querySelector('#btn-desert').addEventListener('click', () => { world.setAttribute('environment', 'preset: egypt'); selectedMap = true; checkStart(); });
+      document.querySelector('#btn-city').addEventListener('click', () => { world.setAttribute('environment', 'preset: contact'); selectedMap = true; checkStart(); });
+      document.querySelector('#btn-plane').addEventListener('click', () => { world.setAttribute('environment', 'preset: tron'); selectedMap = true; checkStart(); });
+      document.querySelector('#btn-beach').addEventListener('click', () => { world.setAttribute('environment', 'preset: forest'); selectedMap = true; checkStart(); });
 
-      // 2. GUN GRAB & SHOOT LOGIC
-      AFRAME.registerComponent('gun-logic', {
+      document.querySelector('#diff-easy').addEventListener('click', () => { selectedDiff = "easy"; checkStart(); });
+      document.querySelector('#diff-hard').addEventListener('click', () => { selectedDiff = "hard"; checkStart(); });
+      document.querySelector('#diff-endless').addEventListener('click', () => { selectedDiff = "endless"; checkStart(); });
+
+      // GUN SYSTEM
+      AFRAME.registerComponent('gun-system', {
         init: function () {
-          let hasGun = false;
-          const holster = document.querySelector('#holster');
-          
-          this.el.addEventListener('gripdown', () => {
-            // Check distance between right hand and the waist holster
-            let handPos = new THREE.Vector3();
-            this.el.object3D.getWorldPosition(handPos);
-            let holsterPos = new THREE.Vector3();
-            holster.object3D.getWorldPosition(holsterPos);
-
-            if (!hasGun && handPos.distanceTo(holsterPos) < 0.4) {
-              // SPAWN GUN IN HAND
-              const gun = document.createElement('a-box'); // Using a Box as placeholder (No more heads!)
-              gun.setAttribute('id', 'active-gun');
-              gun.setAttribute('width', '0.05'); gun.setAttribute('height', '0.1'); gun.setAttribute('depth', '0.3');
-              gun.setAttribute('color', 'black');
-              gun.setAttribute('position', '0 0 -0.1');
-              this.el.appendChild(gun);
-              hasGun = true;
-              holster.setAttribute('visible', 'false'); // Hide holster when gun is out
-            }
-          });
-
           this.el.addEventListener('triggerdown', () => {
-            if(hasGun) { console.log("BANG!"); /* Add sound/bullets here */ }
+             // Basic flash effect
+             console.log("Fired Gun!");
           });
-        }
-      });
-
-      // 3. SPRINT & CROUCH
-      AFRAME.registerComponent('sprint-logic', {
-        init: function() {
-          this.el.addEventListener('thumbstickdown', () => document.querySelector('#rig').setAttribute('movement-controls', 'speed: 0.5'));
-          this.el.addEventListener('thumbstickup', () => document.querySelector('#rig').setAttribute('movement-controls', 'speed: 0.2'));
-        }
-      });
-
-      AFRAME.registerComponent('crouch-logic', {
-        init: function() {
-          let isCrouched = false;
+          
+          // Crouch on Thumbstick Click
           this.el.addEventListener('thumbstickdown', () => {
-            isCrouched = !isCrouched;
-            document.querySelector('#camera').setAttribute('position', isCrouched ? '0 0.8 0' : '0 1.6 0');
+            const cam = document.querySelector('#camera');
+            let isCrouched = cam.getAttribute('position').y < 1.6;
+            cam.setAttribute('position', isCrouched ? '0 1.6 0' : '0 0.8 0');
           });
         }
       });
