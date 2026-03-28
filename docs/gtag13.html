@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html>
   <head>
-    <title>DinoVR: Projectile Zombies</title>
+    <title>DINOVR: Black Ops - Modded</title>
     <script src="https://aframe.io/releases/1.4.2/aframe.min.js"></script>
     <script src="https://cdn.jsdelivr.net/gh/donmccurdy/aframe-extras@v7.0.0/dist/aframe-extras.min.js"></script>
     <script src="https://unpkg.com/aframe-environment-component@1.3.2/dist/aframe-environment-component.min.js"></script>
@@ -9,156 +9,155 @@
   <body style="background: #000;">
     <a-scene loading-screen="enabled: false">
       
-      <a-entity id="main-menu" position="0 1.5 -2">
-        <a-box id="start-btn" position="0 0 0" width="1" height="0.4" color="#222" class="clickable">
-            <a-text value="START SURVIVAL" align="center" position="0 0 0.06" scale="0.5 0.5 0.5"></a-text>
-        </a-box>
+      <a-assets>
+        <audio id="snd-shot" src="https://cdn.glitch.global/35f83863-79d2-43d9-93e1-326949390230/gunshot.mp3" preload="auto"></audio>
+        <audio id="snd-moan" src="https://cdn.glitch.global/35f83863-79d2-43d9-93e1-326949390230/zombie_moan.mp3" preload="auto"></audio>
+        <a-asset-item id="zombie-model" src="https://cdn.jsdelivr.net/gh/KhronosGroup/glTF-Sample-Models/2.0/Alien/glTF/Alien.gltf"></a-asset-item>
+      </a-assets>
+
+      <a-entity id="mod-menu" visible="false" position="0.2 0.2 -0.3" rotation="-20 0 0">
+        <a-plane width="0.5" height="0.7" color="#111" opacity="0.9">
+            <a-text value="DINOVR MOD MENU" align="center" position="0 0.3 0.01" scale="0.2 0.2 0.2" color="cyan"></a-text>
+            <a-text id="menu-status" value="LOCKED: TYPE CODE" align="center" position="0 0.25 0.01" scale="0.15 0.15 0.15" color="red"></a-text>
+            
+            <a-entity id="mod-list" visible="false">
+                <a-text value="1. FLY MOD [Y]" position="-0.2 0.15 0.01" scale="0.15 0.15 0.15"></a-text>
+                <a-text value="2. GOD MODE" position="-0.2 0.1 0.01" scale="0.15 0.15 0.15"></a-text>
+                <a-text value="3. KILL ALL [Grip]" position="-0.2 0.05 0.01" scale="0.15 0.15 0.15"></a-text>
+                <a-text value="4. GIVE $1000" position="-0.2 0 0.01" scale="0.15 0.15 0.15"></a-text>
+                <a-text value="5. INF AMMO" position="-0.2 -0.05 0.01" scale="0.15 0.15 0.15"></a-text>
+                <a-text value="NEXT PAGE ->" position="0 -0.25 0.01" scale="0.15 0.15 0.15" color="yellow"></a-text>
+            </a-entity>
+        </a-plane>
       </a-entity>
 
-      <a-entity id="world" environment="preset: egypt; dressingAmount: 5"></a-entity>
+      <a-entity environment="preset: contact; groundColor: #222; dressingAmount: 10"></a-entity>
+      <a-box id="ammo-crate" position="2 0.5 -2" color="blue" width="0.5" height="0.5" depth="0.5">
+          <a-text value="AMMO BOX" position="0 0.3 0" align="center" scale="0.3 0.3 0.3"></a-text>
+      </a-box>
 
-      <a-entity id="rig" movement-controls="controls: gamepad; speed: 0;">
+      <a-entity id="rig" movement-controls="controls: gamepad; speed: 0.2;">
         <a-entity id="camera" camera position="0 1.6 0" look-controls>
-            <a-cursor fuse="false" raycaster="objects: .clickable"></a-cursor>
-            <a-text id="money-ui" value="$0" position="0.5 0.5 -1" color="yellow" scale="0.4 0.4 0.4"></a-text>
+            <a-text id="ui-ammo" value="AMMO: 10/10" position="-0.6 0.5 -1" color="white" scale="0.3 0.3 0.3"></a-text>
+            <a-text id="ui-money" value="CASH: $0" position="0.5 0.5 -1" color="green" scale="0.3 0.3 0.3"></a-text>
         </a-entity>
 
-        <a-entity id="rightHand" oculus-touch-controls="hand: right" gun-controller>
-            <a-entity id="gun-model" position="0 -0.05 -0.1">
-                <a-box width="0.03" height="0.05" depth="0.25" color="#111"></a-box> 
-                <a-box width="0.03" height="0.12" depth="0.04" color="#111" position="0 -0.06 0.06" rotation="-20 0 0"></a-box>
-                <a-entity id="muzzle" position="0 0.01 -0.15"></a-entity> </a-entity>
-        </a-entity>
+        <a-entity id="leftHand" oculus-touch-controls="hand: left" mod-controller></a-entity>
+        <a-entity id="rightHand" oculus-touch-controls="hand: right" gun-controller></a-entity>
       </a-entity>
 
     </a-scene>
 
     <script>
-      let cash = 0;
-      let gameActive = false;
+      let cash = 0, ammo = 10, isGod = false, isInfAmmo = false, isFly = false;
       let zombies = [];
+      let inputCode = "";
 
-      document.querySelector('#start-btn').addEventListener('click', () => {
-        gameActive = true;
-        document.querySelector('#rig').setAttribute('movement-controls', 'speed: 0.2');
-        document.querySelector('#main-menu').setAttribute('visible', 'false');
-        setInterval(spawnZombie, 2000);
-      });
-
-      // --- BULLET LOGIC ---
-      AFRAME.registerComponent('bullet', {
+      // --- MOD MENU LOGIC ---
+      AFRAME.registerComponent('mod-controller', {
         init: function () {
-          this.direction = new THREE.Vector3(0, 0, -1);
-          this.direction.applyQuaternion(this.el.object3D.quaternion);
-          this.speed = 0.8; // How fast the bullet flies
-          this.maxLife = 100; // Frames before bullet disappears
-        },
-        tick: function () {
-          // Move bullet forward
-          this.el.object3D.position.addScaledVector(this.direction, this.speed);
-          this.maxLife--;
-          if (this.maxLife <= 0) this.el.parentNode.removeChild(this.el);
+          const menu = document.querySelector('#mod-menu');
+          this.el.appendChild(menu); // Attach menu to left hand
 
-          // Check collision with zombies
-          let bulletPos = this.el.object3D.position;
-          zombies.forEach((z, index) => {
-            if (!z.isDead && bulletPos.distanceTo(z.el.object3D.position) < 1) {
-                createBlood(bulletPos);
-                z.die();
-                this.el.parentNode.removeChild(this.el);
-            }
+          this.el.addEventListener('xbuttondown', () => menu.setAttribute('visible', 'true'));
+          this.el.addEventListener('xbuttonup', () => menu.setAttribute('visible', 'false'));
+          
+          // Secret Code Input (Example: Pressing Y, Trigger, Grip in sequence)
+          this.el.addEventListener('ybuttondown', () => {
+             if (!isFly) { inputCode += "D"; checkCode(); } 
+             else { document.querySelector('#rig').object3D.position.y += 1; } // Fly up
           });
         }
       });
 
-      // --- GUN CONTROLLER ---
+      function checkCode() {
+        // Simple logic: if they hit Y 6 times, it unlocks (simulating DINOVR code)
+        if (inputCode.length >= 6) {
+            document.querySelector('#menu-status').setAttribute('value', 'ACCESS GRANTED');
+            document.querySelector('#menu-status').setAttribute('color', 'lime');
+            document.querySelector('#mod-list').setAttribute('visible', 'true');
+            isInfAmmo = true; // Automatically grant one mod
+        }
+      }
+
+      // --- GUN & AMMO ---
       AFRAME.registerComponent('gun-controller', {
         init: function () {
           this.el.addEventListener('triggerdown', () => {
-            if (!gameActive) return;
-
-            // Spawn physical bullet
-            const b = document.createElement('a-sphere');
-            b.setAttribute('radius', '0.02');
-            b.setAttribute('color', 'yellow');
-            b.setAttribute('material', 'emissive: yellow; emissiveIntensity: 5');
+            if (ammo <= 0 && !isInfAmmo) return;
             
-            // Get world position/rotation of the muzzle
-            const muzzle = document.querySelector('#muzzle');
-            let worldPos = new THREE.Vector3();
-            let worldQuat = new THREE.Quaternion();
-            muzzle.object3D.getWorldPosition(worldPos);
-            muzzle.object3D.getWorldQuaternion(worldQuat);
+            // Sound
+            const s = document.createElement('a-sound');
+            s.setAttribute('src', '#snd-shot');
+            s.setAttribute('autoplay', 'true');
+            this.el.appendChild(s);
 
-            b.setAttribute('position', worldPos);
-            b.object3D.setRotationFromQuaternion(worldQuat);
-            b.setAttribute('bullet', '');
-            
-            document.querySelector('a-scene').appendChild(b);
-          });
-          
-          // Crouch on Right Stick Click
-          this.el.addEventListener('thumbstickdown', () => {
-            const cam = document.querySelector('#camera');
-            let isCrouched = cam.getAttribute('position').y < 1.0;
-            cam.setAttribute('position', isCrouched ? '0 1.6 0' : '0 0.8 0');
+            if (!isInfAmmo) ammo--;
+            updateUI();
+            spawnBullet(this.el);
           });
         }
       });
 
-      // --- ZOMBIE LOGIC ---
-      function createBlood(pos) {
-        for(let i=0; i<5; i++) {
-          const s = document.createElement('a-sphere');
-          s.setAttribute('radius', '0.05'); s.setAttribute('color', 'red');
-          s.setAttribute('position', pos);
-          s.setAttribute('animation', `property: scale; to: 0 0 0; dur: 300; easing: easeInQuad`);
-          document.querySelector('a-scene').appendChild(s);
-          setTimeout(() => s.parentNode.removeChild(s), 300);
+      function spawnBullet(hand) {
+          const b = document.createElement('a-sphere');
+          b.setAttribute('radius', '0.02'); b.setAttribute('color', 'yellow');
+          let worldPos = new THREE.Vector3();
+          hand.object3D.getWorldPosition(worldPos);
+          b.setAttribute('position', worldPos);
+          b.setAttribute('bullet', '');
+          document.querySelector('a-scene').appendChild(b);
+      }
+
+      // --- BULLET & ZOMBIE COLLISION ---
+      AFRAME.registerComponent('bullet', {
+        tick: function() {
+            this.el.object3D.translateZ(-0.8);
+            zombies.forEach(z => {
+                if (this.el.object3D.position.distanceTo(z.position) < 1) {
+                    z.el.emit('die');
+                    this.el.parentNode.removeChild(this.el);
+                }
+            });
         }
+      });
+
+      function updateUI() {
+        document.querySelector('#ui-ammo').setAttribute('value', `AMMO: ${isInfAmmo ? 'INF' : ammo}/10`);
+        document.querySelector('#ui-money').setAttribute('value', `CASH: $${cash}`);
       }
 
       function spawnZombie() {
-        if (!gameActive) return;
-        const zEntity = document.createElement('a-entity');
-        const angle = Math.random() * Math.PI * 2;
-        const x = Math.cos(angle) * 15;
-        const zPos = Math.sin(angle) * 15;
-        zEntity.setAttribute('position', `${x} 0 ${zPos}`);
+        const z = document.createElement('a-entity');
+        z.setAttribute('gltf-model', '#zombie-model');
+        z.setAttribute('scale', '0.5 0.5 0.5');
+        z.setAttribute('position', `${Math.random()*20-10} 0 -15`);
+        z.setAttribute('animation-mixer', 'clip: walk'); // If model has anims
         
-        const zObj = {
-          el: zEntity,
-          isDead: false,
-          die: function() {
-            this.isDead = true;
-            this.el.setAttribute('animation', 'property: rotation; to: -90 0 0; dur: 300');
-            cash += 5;
-            document.querySelector('#money-ui').setAttribute('value', '$' + cash);
-            setTimeout(() => {
-                zombies = zombies.filter(item => item !== this);
-                if(this.el.parentNode) this.el.parentNode.removeChild(this.el);
-            }, 500);
-          }
-        };
+        z.addEventListener('die', () => {
+            cash += 5; updateUI();
+            z.parentNode.removeChild(z);
+        });
 
-        zEntity.innerHTML = `<a-box width="0.6" height="1.8" depth="0.3" color="#2d3319"></a-box>`;
-        
-        // Zombie AI tick
-        zEntity.tick = () => {
-          if (zObj.isDead) return;
-          let pPos = new THREE.Vector3();
-          document.querySelector('#camera').object3D.getWorldPosition(pPos);
-          zEntity.object3D.lookAt(pPos.x, 0, pPos.z);
-          let dir = new THREE.Vector3().subVectors(pPos, zEntity.object3D.position).normalize();
-          zEntity.object3D.position.addScaledVector(dir, 0.04);
-        };
-
-        document.querySelector('a-scene').appendChild(zEntity);
-        zombies.push(zObj);
-
-        // Custom ticker for zombie movement
-        setInterval(() => zEntity.tick(), 16);
+        document.querySelector('a-scene').appendChild(z);
+        zombies.push({el: z, position: z.object3D.position});
       }
+
+      // Check Ammo Box Collision
+      setInterval(() => {
+          let p = document.querySelector('#camera').object3D.position;
+          let box = document.querySelector('#ammo-crate').object3D.position;
+          if (p.distanceTo(box) < 1.5) {
+              ammo = 10;
+              updateUI();
+          }
+          zombies.forEach(z => {
+              z.el.object3D.lookAt(p.x, 0, p.z);
+              z.el.object3D.translateZ(0.04);
+          });
+      }, 50);
+
+      setInterval(spawnZombie, 3000);
     </script>
   </body>
 </html>
