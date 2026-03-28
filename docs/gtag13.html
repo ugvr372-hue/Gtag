@@ -1,203 +1,168 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <title>BO4 VR | THE ABANDONED DISTRICT</title>
+    <title>BO4 QUEST 3 VR</title>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
     <style>
-        body { margin: 0; background-color: #000; overflow: hidden; font-family: 'Courier New', Courier, monospace; }
-        
-        /* TACTICAL HUD OVERLAY */
-        #hud {
-            position: absolute;
-            width: 100%;
-            height: 100%;
-            pointer-events: none;
-            z-index: 10;
-            display: flex;
-            flex-direction: column;
-            justify-content: space-between;
-            padding: 40px;
-            box-sizing: border-box;
+        body { margin: 0; background-color: #000; overflow: hidden; font-family: 'Courier New', monospace; }
+        #overlay {
+            position: absolute; width: 100%; height: 100%; pointer-events: none;
+            display: flex; flex-direction: column; justify-content: space-between;
+            padding: 30px; box-sizing: border-box; z-index: 10;
         }
-
-        .top-info { color: #ff0000; font-size: 50px; font-weight: bold; text-shadow: 3px 3px #000; }
-        .bottom-row { display: flex; justify-content: space-between; align-items: flex-end; }
-        .stats { color: #fff; font-size: 24px; text-shadow: 2px 2px #000; }
-        .points { color: #00ff00; font-size: 40px; text-shadow: 2px 2px #000; }
-        
-        #hp-bar-container { width: 300px; height: 20px; background: rgba(0,0,0,0.8); border: 2px solid #333; margin-top: 10px; }
-        #hp-fill { width: 100%; height: 100%; background: #cc0000; transition: width 0.2s; }
-
-        /* VR Button Customization */
-        #VRButton { 
-            background: #111 !important; 
-            color: cyan !important; 
-            border: 1px solid cyan !important; 
-            font-family: 'Courier New' !important;
-            bottom: 100px !important;
-        }
+        .round { color: #ff0000; font-size: 60px; font-weight: bold; }
+        .stats { color: #fff; font-size: 20px; text-shadow: 2px 2px #000; }
+        .pts { color: #00ff00; font-size: 40px; }
+        #hp-bar { width: 250px; height: 15px; background: rgba(0,0,0,0.7); border: 2px solid #444; }
+        #hp-fill { width: 100%; height: 100%; background: #c00; }
     </style>
 </head>
 <body>
 
-    <div id="hud">
-        <div class="top-info" id="round-val">1</div>
-        <div class="bottom-row">
+    <div id="overlay">
+        <div class="round" id="rd">1</div>
+        <div style="display: flex; justify-content: space-between; align-items: flex-end;">
             <div class="stats">
-                <div id="hp-text">HP: 100/100</div>
-                <div id="hp-bar-container"><div id="hp-fill"></div></div>
-                <div id="ammo" style="margin-top: 10px;">30 / 120</div>
+                <div id="hp-txt">HP: 100/100</div>
+                <div id="hp-bar"><div id="hp-fill"></div></div>
+                <div style="margin-top:10px">AMMO: 30/120</div>
             </div>
-            <div class="points" id="pts-val">500</div>
+            <div class="pts" id="pts">500</div>
         </div>
     </div>
 
     <script type="module">
-        import * as THREE from 'https://unpkg.com/three@0.157.0/build/three.module.js';
-        // THIS IS THE LINE YOU WERE MISSING FOR VR:
-        import { VRButton } from 'https://unpkg.com/three@0.157.0/examples/jsm/webxr/VRButton.js';
-        import { XRControllerModelFactory } from 'https://unpkg.com/three@0.157.0/examples/jsm/webxr/XRControllerModelFactory.js';
+        import * as THREE from 'https://cdn.skypack.dev/three@0.136.0/build/three.module.js';
+        import { VRButton } from 'https://cdn.skypack.dev/three@0.136.0/examples/jsm/webxr/VRButton.js';
+        import { XRControllerModelFactory } from 'https://cdn.skypack.dev/three@0.136.0/examples/jsm/webxr/XRControllerModelFactory.js';
 
-        // --- GAME STATE ---
-        let state = {
-            round: 1,
-            hp: 100,
-            points: 500,
-            ammo: 30,
-            reserve: 120,
-            zombies: [],
-            spawned: 0,
-            total: 6
-        };
+        // --- GAME LOGIC ---
+        let game = { round: 1, hp: 100, pts: 500, zombies: [], spawned: 0, total: 6 };
 
-        // --- SCENE SETUP ---
         const scene = new THREE.Scene();
         scene.background = new THREE.Color(0x000000);
-        scene.fog = new THREE.FogExp2(0x0a0015, 0.05);
+        scene.fog = new THREE.FogExp2(0x0a0015, 0.06); // Dark Purple Haze
 
-        const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
-        camera.position.set(0, 1.6, 3); // Standard VR height
-
-        const renderer = new THREE.WebGLRenderer({ antialias: true });
+        const camera = new THREE.PerspectiveCamera(75, window.innerWidth/window.innerHeight, 0.1, 1000);
+        const renderer = new THREE.WebGLRenderer({ antialias: true, powerPreference: "high-performance" });
         renderer.setSize(window.innerWidth, window.innerHeight);
-        renderer.setPixelRatio(window.devicePixelRatio);
-        
-        // ENABLE XR
         renderer.xr.enabled = true;
         document.body.appendChild(renderer.domElement);
         
-        // ADD THE VR BUTTON TO THE DOCUMENT
+        // --- QUEST 3 VR ACTIVATION ---
         document.body.appendChild(VRButton.createButton(renderer));
 
-        // --- LIGHTING (Tactical Flashlight) ---
-        const light = new THREE.SpotLight(0xffffff, 3, 40, Math.PI / 6, 0.5);
-        light.position.set(0, 0, 0);
-        camera.add(light);
-        camera.add(light.target);
-        light.target.position.set(0, 0, -1);
-        scene.add(camera);
+        // --- TACTICAL LIGHTING ---
+        const ambient = new THREE.AmbientLight(0x0a0a0a); 
+        scene.add(ambient);
 
-        // --- WORLD GEN ---
+        // Flashlight attached to the right controller
+        const flashlight = new THREE.SpotLight(0xffffff, 4, 30, Math.PI/7, 0.4);
+        flashlight.castShadow = true;
+
+        // --- WORLD DESIGN ---
         const floor = new THREE.Mesh(
-            new THREE.PlaneGeometry(500, 500),
-            new THREE.MeshStandardMaterial({ color: 0x111111, roughness: 0.8 })
+            new THREE.PlaneGeometry(200, 200),
+            new THREE.MeshStandardMaterial({ color: 0x050505 })
         );
-        floor.rotation.x = -Math.PI / 2;
+        floor.rotation.x = -Math.PI/2;
         scene.add(floor);
 
-        // Dark Concrete Skyscrapers
-        for (let i = 0; i < 60; i++) {
-            const h = 20 + Math.random() * 80;
+        // Skyscraper District
+        for(let i=0; i<40; i++) {
+            const h = 20 + Math.random() * 60;
             const b = new THREE.Mesh(
-                new THREE.BoxGeometry(10, h, 10),
+                new THREE.BoxGeometry(8, h, 8),
                 new THREE.MeshStandardMaterial({ color: 0x050508 })
             );
-            b.position.set(Math.random() * 200 - 100, h / 2, Math.random() * 200 - 100);
+            b.position.set(Math.random()*160-80, h/2, Math.random()*160-80);
             scene.add(b);
         }
 
-        // --- GUN VIEWMODEL (Neon Trims) ---
+        // --- CONTROLLERS & WEAPON ---
+        const controller1 = renderer.xr.getController(0); // Left
+        const controller2 = renderer.xr.getController(1); // Right
+        scene.add(controller1, controller2);
+
+        // Tactical M4-style Gun (Cyan/Magenta Trims)
         const gun = new THREE.Group();
-        const body = new THREE.Mesh(new THREE.BoxGeometry(0.1, 0.15, 0.6), new THREE.MeshBasicMaterial({color: 0x000000}));
-        const cyan = new THREE.Mesh(new THREE.BoxGeometry(0.11, 0.01, 0.61), new THREE.MeshBasicMaterial({color: 0x00ffff}));
-        cyan.position.y = 0.08;
-        const mag = new THREE.Mesh(new THREE.BoxGeometry(0.11, 0.01, 0.61), new THREE.MeshBasicMaterial({color: 0xff00ff}));
-        mag.position.y = -0.08;
-        gun.add(body, cyan, mag);
+        const gBody = new THREE.Mesh(new THREE.BoxGeometry(0.08, 0.12, 0.5), new THREE.MeshBasicMaterial({color: 0x000000}));
+        const cyan = new THREE.Mesh(new THREE.BoxGeometry(0.09, 0.01, 0.51), new THREE.MeshBasicMaterial({color: 0x00ffff}));
+        cyan.position.y = 0.06;
+        const mag = new THREE.Mesh(new THREE.BoxGeometry(0.09, 0.01, 0.51), new THREE.MeshBasicMaterial({color: 0xff00ff}));
+        mag.position.y = -0.06;
+        gun.add(gBody, cyan, mag);
         
-        // Attach gun to Camera (for non-VR) or Controller (for VR)
-        gun.position.set(0.3, -0.3, -0.6);
-        camera.add(gun);
+        // Attach Gun and Flashlight to Right Hand
+        controller2.add(gun);
+        controller2.add(flashlight);
+        controller2.add(flashlight.target);
+        flashlight.target.position.set(0, 0, -1);
 
-        // --- VR CONTROLLERS ---
-        const controller1 = renderer.xr.getController(0);
-        scene.add(controller1);
-        
-        const controllerModelFactory = new XRControllerModelFactory();
-        const controllerGrip1 = renderer.xr.getControllerGrip(0);
-        controllerGrip1.add(controllerModelFactory.createControllerModel(controllerGrip1));
-        scene.add(controllerGrip1);
-
-        // --- ZOMBIE CLASS ---
+        // --- ZOMBIE SYSTEM ---
         class Zombie {
             constructor() {
                 this.mesh = new THREE.Mesh(
-                    new THREE.BoxGeometry(1, 2.2, 1),
-                    new THREE.MeshStandardMaterial({ color: 0x222222 })
+                    new THREE.BoxGeometry(0.8, 2, 0.8),
+                    new THREE.MeshStandardMaterial({ color: 0x111111 })
                 );
-                this.mesh.position.set(Math.random() * 40 - 20, 1.1, Math.random() * 40 - 20);
+                this.mesh.position.set(Math.random()*40-20, 1, Math.random()*40-20);
                 scene.add(this.mesh);
-                state.zombies.push(this);
+                game.zombies.push(this);
             }
             update() {
-                const dir = new THREE.Vector3().subVectors(camera.position, this.mesh.position).normalize();
-                this.mesh.position.add(dir.multiplyScalar(0.04));
-                this.mesh.lookAt(camera.position.x, 1.1, camera.position.z);
-                
-                if (this.mesh.position.distanceTo(camera.position) < 1.5) {
-                    state.hp -= 0.1;
+                const headPos = new THREE.Vector3();
+                renderer.xr.getCamera(camera).getWorldPosition(headPos);
+                const dir = new THREE.Vector3().subVectors(headPos, this.mesh.position).normalize();
+                this.mesh.position.add(new THREE.Vector3(dir.x, 0, dir.z).multiplyScalar(0.03));
+                this.mesh.lookAt(headPos.x, 1, headPos.z);
+
+                if(this.mesh.position.distanceTo(headPos) < 1.5) {
+                    game.hp -= 0.2;
                     updateUI();
                 }
             }
         }
 
-        // --- UI & LOGIC ---
         function updateUI() {
-            document.getElementById('hp-fill').style.width = state.hp + '%';
-            document.getElementById('hp-text').innerText = `HP: ${Math.ceil(state.hp)}/100`;
-            document.getElementById('pts-val').innerText = state.points;
-            document.getElementById('round-val').innerText = state.round;
+            document.getElementById('hp-fill').style.width = game.hp + '%';
+            document.getElementById('pts').innerText = game.pts;
+            document.getElementById('rd').innerText = game.round;
         }
 
-        // --- ANIMATION LOOP ---
-        renderer.setAnimationLoop(() => {
-            // Wave Spawning
-            if (state.spawned < state.total && state.zombies.length < 5) {
-                new Zombie();
-                state.spawned++;
-            }
-            
-            // Round Advance
-            if (state.zombies.length === 0 && state.spawned >= state.total) {
-                state.round++;
-                state.total += 4;
-                state.spawned = 0;
+        // --- SHOOTING ---
+        controller2.addEventListener('selectstart', () => {
+            const raycaster = new THREE.Raycaster();
+            const tempMatrix = new THREE.Matrix4().extractRotation(controller2.matrixWorld);
+            raycaster.ray.origin.setFromMatrixPosition(controller2.matrixWorld);
+            raycaster.ray.direction.set(0, 0, -1).applyMatrix4(tempMatrix);
+
+            const intersects = raycaster.intersectObjects(game.zombies.map(z => z.mesh));
+            if(intersects.length > 0) {
+                const zObj = game.zombies.find(z => z.mesh === intersects[0].object);
+                scene.remove(zObj.mesh);
+                game.zombies.splice(game.zombies.indexOf(zObj), 1);
+                game.pts += 100;
                 updateUI();
             }
+        });
 
-            state.zombies.forEach(z => z.update());
-            
-            // Render
+        // --- RENDER LOOP ---
+        renderer.setAnimationLoop(() => {
+            if (game.spawned < game.total && game.zombies.length < 4) {
+                new Zombie();
+                game.spawned++;
+            }
+            if (game.zombies.length === 0 && game.spawned >= game.total) {
+                game.round++;
+                game.total += 3;
+                game.spawned = 0;
+                updateUI();
+            }
+            game.zombies.forEach(z => z.update());
             renderer.render(scene, camera);
         });
-
-        window.addEventListener('resize', () => {
-            camera.aspect = window.innerWidth / window.innerHeight;
-            camera.updateProjectionMatrix();
-            renderer.setSize(window.innerWidth, window.innerHeight);
-        });
-
     </script>
 </body>
 </html>
