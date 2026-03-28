@@ -1,57 +1,102 @@
 <!DOCTYPE html>
 <html>
   <head>
-    <title>COD VR Standalone</title>
+    <title>COD VR: Zombies Standalone</title>
     <script src="https://aframe.io/releases/1.4.2/aframe.min.js"></script>
     <script src="https://cdn.jsdelivr.net/gh/c-frame/aframe-physics-system@v4.2.2/dist/aframe-physics-system.min.js"></script>
     <script src="https://unpkg.com/aframe-environment-component@1.3.2/dist/aframe-environment-component.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/gh/donmccurdy/aframe-extras@v6.1.1/dist/aframe-extras.min.js"></script>
   </head>
   <body>
     <a-scene physics="debug: false; gravity: -9.8">
       
       <a-assets>
-        <a-asset-item id="gun-model" src="path_to_gun.glb"></a-asset-item>
+        <a-asset-item id="gun-model" src="https://cdn.glitch.global/your-gun-model.glb"></a-asset-item>
+        <a-asset-item id="mag-model" src="https://cdn.glitch.global/your-mag-model.glb"></a-asset-item>
       </a-assets>
 
-      <a-entity environment="preset: egypt; dressingAmount: 50"></a-entity>
+      <a-entity id="map" environment="preset: egypt; groundColor: #c2b280; dressingAmount: 100"></a-entity>
 
-      <a-entity id="player" movement-controls="controls: checkpoint, gamepad">
-        <a-entity camera position="0 1.6 0" look-controls></a-entity>
-        
-        <a-entity oculus-touch-controls="hand: left" 
-                  thumbstick-logging 
-                  @thumbstickdown="toggleSprint"></a-entity>
+      <a-entity id="rig" movement-controls="speed: 0.15; constrainToNavMesh: true">
+        <a-entity id="camera" camera position="0 1.6 0" look-controls>
+            <a-text id="money-display" value="Cash: $0" position="-0.5 -0.5 -1" scale="0.3 0.3 0.3" color="yellow"></a-text>
+        </a-entity>
 
-        <a-entity oculus-touch-controls="hand: right" 
-                  triggerdown="shootWeapon"
-                  thumbstickdown="toggleCrouch"></a-entity>
-        
-        <a-box id="holster" static-body 
-               position="0 0.8 -0.2" 
-               opacity="0.1" width="0.3" height="0.1" depth="0.3">
-          <a-entity id="weapon" gltf-model="#gun-model" scale="0.1 0.1 0.1"></a-entity>
+        <a-entity hand-controls="hand: left; handModelStyle: highPoly; color: #ffcccc"
+                  oculus-touch-controls="hand: left"
+                  player-move-logic>
+        </a-entity>
+
+        <a-entity hand-controls="hand: right; handModelStyle: highPoly; color: #ffcccc"
+                  oculus-touch-controls="hand: right"
+                  gun-logic>
+        </a-entity>
+
+        <a-box id="holster" static-body="shape: box" 
+               position="0 0.8 -0.1" 
+               opacity="0" width="0.4" height="0.1" depth="0.2">
+          <a-entity id="gun" gltf-model="#gun-model" position="0 0 0" rotation="0 90 0"></a-entity>
         </a-box>
       </a-entity>
 
     </a-scene>
 
     <script>
-      // Simple Money Logic
-      let score = 0;
-      let money = 0;
+      // --- GAME STATE ---
+      let cash = 0;
+      let isSprinting = false;
+      let isCrouching = false;
+      let weaponEquipped = false;
 
-      // Logic for killing a zombie
-      function onZombieKilled() {
-        money += 5;
-        console.log("Current Money: $" + money);
-      }
-
-      // Logic for buying from crate
-      function buyWeapon() {
-        if (money >= 10) {
-          money -= 10;
-          // Trigger weapon spawn logic
+      // --- MOVEMENT LOGIC (Thumbsticks) ---
+      AFRAME.registerComponent('player-move-logic', {
+        init: function () {
+          this.el.addEventListener('thumbstickdown', () => {
+            // SPRINT: Left stick click
+            isSprinting = !isSprinting;
+            document.querySelector('#rig').setAttribute('movement-controls', 'speed', isSprinting ? 0.3 : 0.15);
+          });
         }
+      });
+
+      AFRAME.registerComponent('gun-logic', {
+        init: function () {
+          const rig = document.querySelector('#rig');
+          
+          // CROUCH: Right stick click
+          this.el.addEventListener('thumbstickdown', () => {
+            isCrouching = !isCrouching;
+            rig.setAttribute('position', {x: rig.object3D.position.x, y: isCrouching ? -0.5 : 0, z: rig.object3D.position.z});
+          });
+
+          // GRAB WEAPON: Check distance to holster and hold Grip
+          this.el.addEventListener('gripdown', () => {
+             let handPos = this.el.object3D.position;
+             let holsterPos = document.querySelector('#holster').object3D.position;
+             
+             // Simple distance check for the "Waist"
+             if (handPos.distanceTo(holsterPos) < 0.5) {
+                document.querySelector('#gun').setAttribute('visible', 'false');
+                weaponEquipped = true;
+                // Add visual gun to hand here
+             }
+          });
+
+          // SHOOT: Trigger
+          this.el.addEventListener('triggerdown', () => {
+            if(weaponEquipped) {
+               console.log("Bang!");
+               // Raycast logic for killing zombies goes here
+            }
+          });
+        }
+      });
+
+      // --- MAGAZINE SWAP LOGIC ---
+      // This triggers when the mag model hits the bottom of the gun
+      function handleReload() {
+          console.log("Mag Swapped!");
+          // Logic: Remove old mag, add full ammo
       }
     </script>
   </body>
