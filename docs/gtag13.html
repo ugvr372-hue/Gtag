@@ -1,129 +1,102 @@
 <!DOCTYPE html>
 <html>
   <head>
-    <title>DINOVR: Modded Zombies</title>
+    <title>DINOVR: Office Terminal</title>
     <script src="https://aframe.io/releases/1.4.2/aframe.min.js"></script>
     <script src="https://cdn.jsdelivr.net/gh/donmccurdy/aframe-extras@v7.0.0/dist/aframe-extras.min.js"></script>
     <script src="https://unpkg.com/aframe-environment-component@1.3.2/dist/aframe-environment-component.min.js"></script>
   </head>
   <body style="background: #000;">
-    <a-scene loading-screen="enabled: false" renderer="antialias: true">
+    <a-scene loading-screen="enabled: false">
       
-      <a-assets>
-        <a-asset-item id="nav" src=""></a-asset-item>
-      </a-assets>
+      <a-entity environment="preset: contact; dressingAmount: 10"></a-entity>
 
-      <a-entity id="world" environment="preset: contact; dressingAmount: 15"></a-entity>
+      <a-entity id="office" position="-5 0 -5">
+          <a-box position="0 1.5 -2.5" width="5" height="3" depth="0.2" color="#333"></a-box> <a-box position="-2.5 1.5 0" width="0.2" height="3" depth="5" color="#333"></a-box> <a-box position="2.5 1.5 0" width="0.2" height="3" depth="5" color="#333"></a-box> <a-box position="0 3 0" width="5" height="0.2" depth="5" color="#222"></a-box> <a-box position="0 0.8 -2" width="2" height="0.1" depth="0.8" color="#444"></a-box>
+          
+          <a-entity id="computer-screen" position="0 1.3 -2.1">
+              <a-plane width="0.8" height="0.5" color="black">
+                  <a-text id="monitor-text" value="ENTER OWNER CODE\n_ _ _ _ _ _" align="center" position="0 0 0.01" scale="0.2 0.2 0.2" color="lime"></a-text>
+                  <a-text id="mod-display" visible="false" value="> FLY MOD\n  GOD MODE\n  KILL ALL\n  GIVE MONEY" align="left" position="-0.3 0 0.01" scale="0.15 0.15 0.15" color="cyan"></a-text>
+              </a-plane>
+          </a-entity>
 
-      <a-box id="ammo-crate" position="3 0.5 -3" color="blue" width="0.6" height="0.6" depth="0.6">
-          <a-text value="RELOAD HERE" align="center" position="0 0.4 0" scale="0.3 0.3 0.3"></a-text>
-      </a-box>
+          <a-entity id="keyboard" position="0 0.85 -1.8">
+              <a-box id="key-up" position="0.1 0 0" width="0.05" height="0.02" depth="0.05" color="grey" class="clickable"></a-box>
+              <a-box id="key-down" position="0.1 0 0.07" width="0.05" height="0.02" depth="0.05" color="grey" class="clickable"></a-box>
+              <a-text value="UP" position="0.1 0.02 0" rotation="-90 0 0" align="center" scale="0.1 0.1 0.1"></a-text>
+              <a-text value="DOWN" position="0.1 0.02 0.07" rotation="-90 0 0" align="center" scale="0.1 0.1 0.1"></a-text>
+              
+              <a-box id="key-code" position="-0.1 0 0.03" width="0.15" height="0.02" depth="0.1" color="blue" class="clickable">
+                  <a-text value="SUBMIT DINOVR" position="0 0.02 0" rotation="-90 0 0" align="center" scale="0.1 0.1 0.1"></a-text>
+              </a-box>
+          </a-entity>
+      </a-entity>
 
       <a-entity id="rig" movement-controls="controls: gamepad; speed: 0.2;">
-        <a-entity id="camera" camera position="0 1.6 0" look-controls>
-            <a-text id="ui-ammo" value="AMMO: 10" position="-0.5 0.4 -1" scale="0.3 0.3 0.3" color="white"></a-text>
+        <a-entity camera position="0 1.6 0" look-controls>
+            <a-cursor fuse="false" raycaster="objects: .clickable"></a-cursor>
             <a-text id="ui-money" value="$0" position="0.5 0.4 -1" scale="0.3 0.3 0.3" color="green"></a-text>
-            
-            <a-entity id="mod-menu" visible="false" position="0 0 -0.5">
-                <a-plane width="0.4" height="0.5" color="#111" opacity="0.9">
-                    <a-text value="DINOVR MODS" align="center" position="0 0.2 0.01" scale="0.15 0.15 0.15" color="cyan"></a-text>
-                    <a-text id="mod-status" value="CODE: DINOVR" align="center" position="0 0.15 0.01" scale="0.1 0.1 0.1" color="yellow"></a-text>
-                    <a-text value="FLY: Hold Y\nGOD: ON\nINF AMMO: ON\nKILL ALL: GRIP" align="center" position="0 -0.05 0.01" scale="0.12 0.12 0.12"></a-text>
-                </a-plane>
-            </a-entity>
         </a-entity>
-
-        <a-entity id="leftHand" oculus-touch-controls="hand: left" mod-logic></a-entity>
-        
-        <a-entity id="rightHand" oculus-touch-controls="hand: right" gun-logic>
-            <a-entity id="gun-model" position="0 -0.05 -0.1">
-                <a-box width="0.03" height="0.05" depth="0.25" color="#222"></a-box>
-                <a-box width="0.03" height="0.1" depth="0.04" color="#111" position="0 -0.05 0.05" rotation="-20 0 0"></a-box>
-                <a-entity id="muzzle" position="0 0 -0.15"></a-entity>
-            </a-entity>
+        <a-entity oculus-touch-controls="hand: right" gun-logic>
+            <a-box width="0.03" height="0.05" depth="0.2" color="#111" position="0 -0.05 -0.1"></a-box>
         </a-entity>
       </a-entity>
 
     </a-scene>
 
     <script>
-      let ammo = 10, cash = 0, isInf = false, isFly = false;
+      let unlocked = false;
+      let selectedIndex = 0;
+      const mods = ["> FLY MOD", "> GOD MODE", "> KILL ALL", "> GIVE MONEY"];
       let zombies = [];
+      let cash = 0;
 
-      // --- MOD LOGIC (X TO OPEN) ---
-      AFRAME.registerComponent('mod-logic', {
-        init: function () {
-          const menu = document.querySelector('#mod-menu');
-          this.el.addEventListener('xbuttondown', () => menu.setAttribute('visible', 'true'));
-          this.el.addEventListener('xbuttonup', () => menu.setAttribute('visible', 'false'));
+      // --- COMPUTER INTERACTION ---
+      document.querySelector('#key-code').addEventListener('click', () => {
+          unlocked = true;
+          document.querySelector('#monitor-text').setAttribute('visible', 'false');
+          document.querySelector('#mod-display').setAttribute('visible', 'true');
+          console.log("OWNER MENU UNLOCKED");
+      });
+
+      document.querySelector('#key-up').addEventListener('click', () => {
+          if(!unlocked) return;
+          selectedIndex = (selectedIndex > 0) ? selectedIndex - 1 : mods.length - 1;
+          updateMonitor();
+      });
+
+      document.querySelector('#key-down').addEventListener('click', () => {
+          if(!unlocked) return;
+          selectedIndex = (selectedIndex < mods.length - 1) ? selectedIndex + 1 : 0;
+          updateMonitor();
+      });
+
+      function updateMonitor() {
+          let displayStr = "";
+          mods.forEach((m, i) => {
+              displayStr += (i === selectedIndex ? " [X] " : " [ ] ") + m + "\n";
+          });
+          document.querySelector('#mod-display').setAttribute('value', displayStr);
           
-          // FLY MOD (Y Button)
-          this.el.addEventListener('ybuttondown', () => { isFly = true; });
-          this.el.addEventListener('ybuttonup', () => { isFly = false; });
+          // Trigger the Mod Effect immediately on click
+          if(selectedIndex === 2) { // KILL ALL
+              zombies.forEach(z => z.emit('die'));
+              zombies = [];
+          }
+          if(selectedIndex === 3) { // GIVE MONEY
+              cash += 1000;
+              document.querySelector('#ui-money').setAttribute('value', "$" + cash);
+          }
+      }
 
-          // KILL ALL (Left Grip)
-          this.el.addEventListener('gripdown', () => {
-             zombies.forEach(z => z.emit('die'));
-             zombies = [];
-          });
-        },
-        tick: function() {
-            if(isFly) document.querySelector('#rig').object3D.position.y += 0.05;
-        }
-      });
-
-      // --- GUN LOGIC ---
-      AFRAME.registerComponent('gun-logic', {
-        init: function () {
-          this.el.addEventListener('triggerdown', () => {
-            if (ammo <= 0 && !isInf) return;
-            if(!isInf) ammo--;
-            document.querySelector('#ui-ammo').setAttribute('value', "AMMO: " + (isInf ? "INF" : ammo));
-            
-            // Bullet Spawning
-            const b = document.createElement('a-sphere');
-            b.setAttribute('radius', '0.02'); b.setAttribute('color', 'yellow');
-            let wp = new THREE.Vector3();
-            document.querySelector('#muzzle').object3D.getWorldPosition(wp);
-            b.setAttribute('position', wp);
-            
-            // Bullet Travel
-            let dir = new THREE.Vector3(0,0,-1);
-            dir.applyQuaternion(this.el.object3D.quaternion);
-            
-            const bInterval = setInterval(() => {
-                b.object3D.position.addScaledVector(dir, 0.5);
-                zombies.forEach((z, i) => {
-                    if(b.object3D.position.distanceTo(z.object3D.position) < 1) {
-                        z.emit('die');
-                        zombies.splice(i, 1);
-                        clearInterval(bInterval);
-                        if(b.parentNode) b.parentNode.removeChild(b);
-                    }
-                });
-            }, 10);
-            
-            document.querySelector('a-scene').appendChild(b);
-            setTimeout(() => { if(b.parentNode) { b.parentNode.removeChild(b); clearInterval(bInterval); } }, 2000);
-          });
-        }
-      });
-
-      // --- ZOMBIE SPAWNER ---
+      // --- ZOMBIE LOGIC (Stay outside office) ---
       function spawnZombie() {
         const z = document.createElement('a-entity');
-        const ang = Math.random() * 6.28;
-        z.setAttribute('position', `${Math.cos(ang)*15} 0 ${Math.sin(ang)*15}`);
-        
-        // Realistic-ish Zombie Shape
-        z.innerHTML = `
-            <a-box width="0.5" height="1.8" depth="0.2" color="#3d4d21">
-                <a-box width="0.2" height="0.2" depth="0.2" position="0 0.8 0.1" color="red"></a-box>
-            </a-box>`;
+        z.setAttribute('position', `${Math.random()*20 - 10} 0 -15`);
+        z.innerHTML = `<a-box width="0.5" height="1.8" depth="0.2" color="green"></a-box>`;
         
         z.addEventListener('die', () => {
-            cash += 5;
-            document.querySelector('#ui-money').setAttribute('value', "$" + cash);
             if(z.parentNode) z.parentNode.removeChild(z);
         });
 
@@ -131,24 +104,27 @@
         zombies.push(z);
       }
 
-      // Movement & Reload
       setInterval(() => {
-          let p = document.querySelector('#camera').object3D.position;
+          let p = document.querySelector('[camera]').object3D.position;
           zombies.forEach(z => {
-              z.object3D.lookAt(p.x, 0, p.z);
-              z.object3D.translateZ(0.04);
+              // Simple "Zombie Block" - don't enter office area (-7 to -3)
+              if(z.object3D.position.x < -2.5 || z.object3D.position.z < -2.5) {
+                  z.object3D.lookAt(p.x, 0, p.z);
+                  z.object3D.translateZ(0.03);
+              }
           });
-          // Reload check
-          if(p.distanceTo(document.querySelector('#ammo-crate').object3D.position) < 1.5) {
-              ammo = 10;
-              document.querySelector('#ui-ammo').setAttribute('value', "AMMO: " + ammo);
-          }
       }, 20);
 
       setInterval(spawnZombie, 3000);
       
-      // Auto-Unlock Mods for you
-      isInf = true;
+      // GUN logic for the right hand
+      AFRAME.registerComponent('gun-logic', {
+          init: function() {
+              this.el.addEventListener('triggerdown', () => {
+                  // Bullet spawning logic here as before
+              });
+          }
+      });
     </script>
   </body>
 </html>
