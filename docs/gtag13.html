@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html>
   <head>
-    <title>DINOVR: Final Projectile Build</title>
+    <title>DINOVR: One-Handed Pro</title>
     <script src="https://aframe.io/releases/1.4.2/aframe.min.js"></script>
     <script src="https://cdn.jsdelivr.net/gh/donmccurdy/aframe-extras@v7.0.0/dist/aframe-extras.min.js"></script>
     <script src="https://unpkg.com/aframe-environment-component@1.3.2/dist/aframe-environment-component.min.js"></script>
@@ -14,31 +14,31 @@
       <a-entity id="office" position="-5 0 -5">
           <a-box position="0 1.5 -2.5" width="5" height="3" depth="0.2" color="#222"></a-box>
           <a-box id="desk" position="0 0.8 -2" width="2" height="0.1" depth="0.8" color="#333"></a-box>
-          <a-box id="key-submit" position="0 0.85 -1.7" width="0.3" height="0.05" depth="0.15" color="blue" class="clickable">
-              <a-text value="CLICK TO ACTIVATE MODS" rotation="-90 0 0" align="center" position="0 0.03 0" scale="0.1 0.1 0.1"></a-text>
+          <a-box id="key-submit" position="0 0.85 -1.7" width="0.3" height="0.1" depth="0.15" color="blue" class="clickable">
+              <a-text value="CLICK TO UNLOCK MODS" rotation="-90 0 0" align="center" position="0 0.06 0" scale="0.1 0.1 0.1"></a-text>
           </a-box>
       </a-entity>
 
-      <a-entity id="rig" movement-controls="controls: gamepad; speed: 0.2;">
+      <a-entity id="rig" movement-controls="controls: gamepad; speed: 0.15;">
         <a-entity id="height-offset" position="0 1 0">
             <a-entity id="camera" camera look-controls>
                 <a-cursor fuse="false" raycaster="objects: .clickable"></a-cursor>
                 
-                <a-entity id="floating-menu" visible="false" position="0 0 -0.4">
+                <a-entity id="mod-hud" visible="false" position="0 0 -0.4">
                     <a-plane width="0.3" height="0.4" color="#111" opacity="0.9">
-                        <a-text value="DINOVR MODS\n[ACTIVE]" align="center" color="cyan" scale="0.15 0.15 0.15" position="0 0.15 0.01"></a-text>
-                        <a-text value="FLY: HOLD Y\nKILL ALL: GRIP" align="center" scale="0.1 0.1 0.1" position="0 0 0.01"></a-text>
+                        <a-text value="DINOVR MODS\n[ONE-HANDED]" align="center" color="cyan" scale="0.15 0.15 0.15" position="0 0.15 0.01"></a-text>
+                        <a-text value="B: FLY\nGRIP: KILL ALL\nSTICK: MOVE" align="center" scale="0.1 0.1 0.1" position="0 0 0.01"></a-text>
                     </a-plane>
                 </a-entity>
             </a-entity>
         </a-entity>
 
-        <a-entity id="leftHand" oculus-touch-controls="hand: left" mod-access></a-entity>
-        
-        <a-entity id="rightHand" oculus-touch-controls="hand: right" gun-projectile>
-            <a-box width="0.03" height="0.05" depth="0.2" color="#111" position="0 -0.05 -0.1">
-                <a-entity id="muzzle" position="0 0 -0.12"></a-entity>
-            </a-box>
+        <a-entity id="singleHand" oculus-touch-controls="hand: right" one-hand-master>
+            <a-entity id="gun-model" position="0 -0.05 -0.1">
+                <a-box width="0.03" height="0.05" depth="0.22" color="#111"></a-box> 
+                <a-box width="0.03" height="0.1" depth="0.04" color="#111" position="0 -0.05 0.05" rotation="-20 0 0"></a-box>
+                <a-entity id="muzzle" position="0 0 -0.15"></a-entity>
+            </a-entity>
         </a-entity>
       </a-entity>
 
@@ -47,37 +47,72 @@
     <script>
       let modsUnlocked = false;
       let zombies = [];
+      let isCrouched = false;
 
-      // 1. UNLOCK LOGIC
+      // 1. UNLOCK BUTTON ON DESERT
       document.querySelector('#key-submit').addEventListener('click', () => {
           modsUnlocked = true;
-          alert("DINOVR MODS UNLOCKED - HOLD X");
+          // Simple visual feedback
+          document.querySelector('#key-submit').setAttribute('color', 'green');
       });
 
-      // 2. MOD MENU (X BUTTON)
-      AFRAME.registerComponent('mod-access', {
+      // 2. MASTER CONTROLLER LOGIC (ALL IN ONE)
+      AFRAME.registerComponent('one-hand-master', {
           init: function() {
-              const menu = document.querySelector('#floating-menu');
-              this.el.addEventListener('xbuttondown', () => {
-                  if(modsUnlocked) menu.setAttribute('visible', 'true');
+              const menu = document.querySelector('#mod-hud');
+              const rig = document.querySelector('#rig');
+              const cam = document.querySelector('#camera');
+
+              // A-BUTTON: Toggle Mod Menu
+              this.el.addEventListener('abuttondown', () => {
+                  if(modsUnlocked) menu.setAttribute('visible', !menu.getAttribute('visible'));
               });
-              this.el.addEventListener('xbuttonup', () => {
-                  menu.setAttribute('visible', 'false');
+
+              // B-BUTTON: Fly
+              this.el.addEventListener('bbuttondown', () => {
+                  if(modsUnlocked) rig.object3D.position.y += 1.5;
               });
-              
-              // FLY MOD
-              this.el.addEventListener('ybuttondown', () => {
-                  if(modsUnlocked) document.querySelector('#rig').object3D.position.y += 1;
+
+              // GRIP: Kill All
+              this.el.addEventListener('gripdown', () => {
+                  if(modsUnlocked) {
+                      zombies.forEach(z => z.emit('die'));
+                      zombies = [];
+                  }
+              });
+
+              // THUMBSTICK CLICK: Crouch
+              this.el.addEventListener('thumbstickdown', () => {
+                  isCrouched = !isCrouched;
+                  document.querySelector('#height-offset').setAttribute('position', isCrouched ? '0 0.5 0' : '0 1 0');
+              });
+
+              // TRIGGER: Shoot Physical Bullet
+              this.el.addEventListener('triggerdown', () => {
+                  const b = document.createElement('a-sphere');
+                  b.setAttribute('radius', '0.02');
+                  b.setAttribute('color', 'yellow');
+                  b.setAttribute('material', 'emissive: yellow; emissiveIntensity: 2');
+                  
+                  let wp = new THREE.Vector3();
+                  let wq = new THREE.Quaternion();
+                  document.querySelector('#muzzle').object3D.getWorldPosition(wp);
+                  document.querySelector('#muzzle').object3D.getWorldQuaternion(wq);
+                  
+                  b.setAttribute('position', wp);
+                  b.object3D.setRotationFromQuaternion(wq);
+                  b.setAttribute('bullet-fly', '');
+                  
+                  document.querySelector('a-scene').appendChild(b);
+                  setTimeout(() => { if(b.parentNode) b.parentNode.removeChild(b); }, 2000);
               });
           }
       });
 
-      // 3. PHYSICAL BULLET LOGIC
+      // 3. BULLET MOVEMENT
       AFRAME.registerComponent('bullet-fly', {
-          tick: function() {
-              this.el.object3D.translateZ(-0.6); // Bullet Speed
-              
-              // Check for hits
+          tick: function(t, dt) {
+              this.el.object3D.translateZ(-0.7); 
               const bPos = this.el.object3D.position;
               zombies.forEach((z, i) => {
                   if(bPos.distanceTo(z.object3D.position) < 1) {
@@ -89,36 +124,12 @@
           }
       });
 
-      // 4. GUN SHOOTING
-      AFRAME.registerComponent('gun-projectile', {
-          init: function() {
-              this.el.addEventListener('triggerdown', () => {
-                  const b = document.createElement('a-sphere');
-                  b.setAttribute('radius', '0.02');
-                  b.setAttribute('color', 'yellow');
-                  b.setAttribute('bullet-fly', '');
-                  
-                  // Spawn at gun tip
-                  let wp = new THREE.Vector3();
-                  let wq = new THREE.Quaternion();
-                  document.querySelector('#muzzle').object3D.getWorldPosition(wp);
-                  document.querySelector('#muzzle').object3D.getWorldQuaternion(wq);
-                  
-                  b.setAttribute('position', wp);
-                  b.object3D.setRotationFromQuaternion(wq);
-                  
-                  document.querySelector('a-scene').appendChild(b);
-                  setTimeout(() => { if(b.parentNode) b.parentNode.removeChild(b); }, 2000);
-              });
-          }
-      });
-
-      // 5. ZOMBIE SYSTEM
+      // 4. ZOMBIE SYSTEM
       function spawnZombie() {
           const z = document.createElement('a-entity');
           const ang = Math.random() * 6.28;
           z.setAttribute('position', `${Math.cos(ang)*15} 0 ${Math.sin(ang)*15}`);
-          z.innerHTML = `<a-box class="z-hit" width="0.6" height="1.8" depth="0.3" color="green"></a-box>`;
+          z.innerHTML = `<a-box width="0.6" height="1.8" depth="0.3" color="#2d3319"></a-box>`;
           
           z.addEventListener('die', () => { if(z.parentNode) z.parentNode.removeChild(z); });
           document.querySelector('a-scene').appendChild(z);
