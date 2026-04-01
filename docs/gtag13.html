@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html>
   <head>
-    <title>DinoVR: Final Precision Build</title>
+    <title>DINOVR: Poppy Playtime VR</title>
     <script src="https://aframe.io/releases/1.4.2/aframe.min.js"></script>
     <script src="https://cdn.jsdelivr.net/gh/donmccurdy/aframe-extras@v7.0.0/dist/aframe-extras.min.js"></script>
     <script src="https://unpkg.com/aframe-environment-component@1.3.2/dist/aframe-environment-component.min.js"></script>
@@ -9,24 +9,24 @@
   <body style="background: #000;">
     <a-scene webxr="requiredFeatures: local-floor" loading-screen="enabled: false">
       
-      <a-entity environment="preset: contact; dressingAmount: 5"></a-entity>
+      <a-entity environment="preset: osiris; groundColor: #1a1a1a; dressingAmount: 0"></a-entity>
 
       <a-entity id="start-menu" position="0 1.5 -1.5">
-          <a-plane width="1.2" height="0.6" color="#111" opacity="0.9">
-              <a-text value="DINOVR: SELECT MODE" align="center" position="0 0.2 0.01" scale="0.25 0.25 0.25" color="yellow"></a-text>
-              <a-box id="btn-1hand" position="-0.3 -0.1 0.02" width="0.4" height="0.2" color="blue" class="clickable">
+          <a-plane width="1.2" height="0.6" color="#001a33" opacity="0.9">
+              <a-text value="POPPY PLAYTIME VR" align="center" position="0 0.2 0.01" scale="0.25 0.25 0.25" color="#ffcc00"></a-text>
+              <a-box id="btn-1hand" position="-0.3 -0.1 0.02" width="0.4" height="0.2" color="#ff0000" class="clickable">
                   <a-text value="1 HAND" align="center" scale="0.15 0.15 0.15" position="0 0 0.06"></a-text>
               </a-box>
-              <a-box id="btn-2hand" position="0.3 -0.1 0.02" width="0.4" height="0.2" color="purple" class="clickable">
+              <a-box id="btn-2hand" position="0.3 -0.1 0.02" width="0.4" height="0.2" color="#0000ff" class="clickable">
                   <a-text value="2 HANDS" align="center" scale="0.15 0.15 0.15" position="0 0 0.06"></a-text>
               </a-box>
           </a-plane>
       </a-entity>
 
       <a-entity id="office" position="-5 0 -5">
-          <a-box position="0 1.5 -2.5" width="5" height="3" depth="0.2" color="#222"></a-box>
-          <a-box id="key-submit" position="0 0.85 -1.7" width="0.3" height="0.1" depth="0.15" color="blue" class="clickable">
-              <a-text value="ACTIVATE DINOVR MODS" rotation="-90 0 0" align="center" position="0 0.06 0" scale="0.1 0.1 0.1"></a-text>
+          <a-box position="0 1.5 -2.5" width="5" height="3" depth="0.2" color="#444"></a-box>
+          <a-box id="key-submit" position="0 0.85 -1.7" width="0.3" height="0.1" depth="0.15" color="#ffcc00" class="clickable">
+              <a-text value="ACTIVATE DINOVR MODS" rotation="-90 0 0" align="center" position="0 0.06 0" scale="0.1 0.1 0.1" color="black"></a-text>
           </a-box>
       </a-entity>
 
@@ -35,145 +35,107 @@
             <a-entity id="camera" camera look-controls>
                 <a-cursor fuse="false" raycaster="objects: .clickable"></a-cursor>
                 <a-entity id="mod-hud" visible="false" position="0 0 -0.4">
-                    <a-plane width="0.3" height="0.3" color="#111" opacity="0.9">
-                        <a-text value="MODS ACTIVE" align="center" color="cyan" scale="0.15 0.15 0.15" position="0 0.1 0.01"></a-text>
-                        <a-text id="god-status" value="GOD MODE: OFF" align="center" color="red" scale="0.1 0.1 0.1" position="0 0.03 0.01"></a-text>
-                        <a-text id="ctrl-hint" value="" align="center" scale="0.08 0.08 0.08" position="0 -0.05 0.01"></a-text>
+                    <a-plane width="0.3" height="0.2" color="#111" opacity="0.9">
+                        <a-text value="MODS ACTIVE\nFLY: B | KILL: GRIP" align="center" color="cyan" scale="0.1 0.1 0.1"></a-text>
                     </a-plane>
                 </a-entity>
             </a-entity>
         </a-entity>
 
+        <a-entity id="rightHand" oculus-touch-controls="hand: right" visible="false">
+            <a-entity id="grabpack-base" position="0 0 0.05">
+                <a-box id="red-hand" width="0.15" height="0.15" depth="0.05" color="red" position="0 0 -0.2">
+                    <a-box width="0.02" height="0.02" depth="0.5" color="black" position="0 0 0.25"></a-box> </a-box>
+            </a-entity>
+        </a-entity>
+        
         <a-entity id="leftHand" oculus-touch-controls="hand: left" visible="false"></a-entity>
-        <a-entity id="rightHand" oculus-touch-controls="hand: right" visible="false"></a-entity>
       </a-entity>
+
     </a-scene>
 
     <script>
       let mode = "";
       let modsUnlocked = false;
-      let godMode = false;
       let isFlying = false;
-      let zombies = [];
+      let monsters = [];
 
-      // --- AUTO VR & SELECTION ---
-      const sceneEl = document.querySelector('a-scene');
-      
       document.querySelector('#btn-1hand').addEventListener('click', () => { mode = "1hand"; startGame(); });
       document.querySelector('#btn-2hand').addEventListener('click', () => { mode = "2hand"; startGame(); });
 
       function startGame() {
-          // Attempt to enter VR automatically
-          if (sceneEl.enterVR) sceneEl.enterVR();
-          
+          document.querySelector('a-scene').enterVR();
           document.querySelector('#start-menu').setAttribute('visible', 'false');
-          const rh = document.querySelector('#rightHand');
-          const lh = document.querySelector('#leftHand');
-          rh.setAttribute('visible', 'true');
-          rh.setAttribute('gun-logic', '');
-
-          if(mode === "2hand") {
-              lh.setAttribute('visible', 'true');
-              lh.setAttribute('mod-logic', '');
-              document.querySelector('#ctrl-hint').setAttribute('value', "X: MENU | Y: FLY\nL-GRIP: KILL ALL");
-          } else {
-              document.querySelector('#ctrl-hint').setAttribute('value', "A: MENU | B: FLY\nR-GRIP: KILL ALL\nGOD: TRIGGER CLICK");
-          }
-
-          // PRECISION HAND ALIGNMENT: Grip at 0 0 0, Slide moves forward
-          rh.innerHTML = `
-            <a-entity id="hand-pivot" position="0 0 0" rotation="0 0 0">
-                <a-box width="0.03" height="0.1" depth="0.04" color="#111" position="0 -0.03 0" rotation="-15 0 0"></a-box> <a-box width="0.03" height="0.05" depth="0.22" color="#222" position="0 0.02 -0.08"></a-box> <a-entity id="muzzle" position="0 0.02 -0.2"></a-entity>
-            </a-entity>`;
+          document.querySelector('#rightHand').setAttribute('visible', 'true');
+          document.querySelector('#rightHand').setAttribute('grabpack-logic', '');
           
-          setInterval(spawnZombie, 3000);
+          if(mode === "2hand") document.querySelector('#leftHand').setAttribute('visible', 'true');
+          
+          setInterval(spawnMonster, 5000);
       }
 
-      // --- MODS ---
+      // GRABPACK LOGIC
+      AFRAME.registerComponent('grabpack-logic', {
+          init: function() {
+              const hand = document.querySelector('#red-hand');
+              this.el.addEventListener('triggerdown', () => {
+                  // Fire Hand Animation
+                  hand.setAttribute('animation', 'property: position; to: 0 0 -10; dur: 300; dir: alternate; loop: 1');
+                  
+                  // Check Collision during fire
+                  setTimeout(() => {
+                    let hPos = new THREE.Vector3();
+                    hand.object3D.getWorldPosition(hPos);
+                    monsters.forEach((m, i) => {
+                        if(hPos.distanceTo(m.object3D.position) < 2) {
+                            m.emit('die');
+                            monsters.splice(i, 1);
+                        }
+                    });
+                  }, 150);
+              });
+
+              // Mod Inputs
+              this.el.addEventListener('abuttondown', () => { if(modsUnlocked) document.querySelector('#mod-hud').setAttribute('visible', true); });
+              this.el.addEventListener('bbuttondown', () => { if(modsUnlocked) isFlying = true; });
+              this.el.addEventListener('bbuttonup', () => { isFlying = false; });
+              this.el.addEventListener('gripdown', () => { if(modsUnlocked) monsters.forEach(m => m.emit('die')); });
+          }
+      });
+
       document.querySelector('#key-submit').addEventListener('click', () => {
           modsUnlocked = true;
           document.querySelector('#key-submit').setAttribute('color', 'lime');
       });
 
-      function killAll() {
-          zombies.forEach(z => z.emit('die'));
-          zombies = [];
-      }
-
-      AFRAME.registerComponent('gun-logic', {
-          init: function() {
-              const menu = document.querySelector('#mod-hud');
-              this.el.addEventListener('triggerdown', () => shoot(this.el));
-              this.el.addEventListener('abuttondown', () => { if(modsUnlocked && mode === "1hand") menu.setAttribute('visible', !menu.getAttribute('visible')); });
-              this.el.addEventListener('bbuttondown', () => { if(modsUnlocked && mode === "1hand") isFlying = true; });
-              this.el.addEventListener('bbuttonup', () => { isFlying = false; });
-              this.el.addEventListener('gripdown', () => { if(modsUnlocked && mode === "1hand") killAll(); });
-          }
-      });
-
-      AFRAME.registerComponent('mod-logic', {
-          init: function() {
-              const menu = document.querySelector('#mod-hud');
-              this.el.addEventListener('xbuttondown', () => { if(modsUnlocked) menu.setAttribute('visible', !menu.getAttribute('visible')); });
-              this.el.addEventListener('ybuttondown', () => { if(modsUnlocked) isFlying = true; });
-              this.el.addEventListener('ybuttonup', () => { isFlying = false; });
-              this.el.addEventListener('gripdown', () => { if(modsUnlocked) killAll(); });
-          }
-      });
-
-      function shoot(hand) {
-          const b = document.createElement('a-sphere');
-          b.setAttribute('radius', '0.02'); b.setAttribute('color', 'yellow');
-          let wp = new THREE.Vector3(); let wq = new THREE.Quaternion();
-          document.querySelector('#muzzle').object3D.getWorldPosition(wp);
-          document.querySelector('#muzzle').object3D.getWorldQuaternion(wq);
-          b.setAttribute('position', wp);
-          b.object3D.setRotationFromQuaternion(wq);
-          b.setAttribute('bullet-travel', '');
-          document.querySelector('a-scene').appendChild(b);
-          setTimeout(() => { if(b.parentNode) b.parentNode.removeChild(b); }, 2000);
-      }
-
-      AFRAME.registerComponent('bullet-travel', {
-          tick: function() {
-              this.el.object3D.translateZ(-0.7);
-              zombies.forEach((z, i) => {
-                  if(this.el.object3D.position.distanceTo(z.object3D.position) < 0.8) {
-                      z.emit('die'); zombies.splice(i, 1);
-                      if(this.el.parentNode) this.el.parentNode.removeChild(this.el);
-                  }
-              });
-          }
-      });
-
-      function spawnZombie() {
+      function spawnMonster() {
           if(mode === "") return;
-          const z = document.createElement('a-entity');
+          const m = document.createElement('a-entity');
           const ang = Math.random() * 6.28;
-          z.setAttribute('position', `${Math.cos(ang)*18} 0 ${Math.sin(ang)*18}`);
-          z.innerHTML = `<a-box width="0.6" height="1.8" depth="0.3" color="#2d3319"></a-box>`;
-          z.addEventListener('die', () => { if(z.parentNode) z.parentNode.removeChild(z); });
-          document.querySelector('a-scene').appendChild(z);
-          zombies.push(z);
+          m.setAttribute('position', `${Math.cos(ang)*20} 0 ${Math.sin(ang)*20}`);
+          
+          // HUGGY WUGGY STYLE MODEL (Boxes for performance)
+          m.innerHTML = `
+            <a-entity position="0 2 0">
+                <a-box width="0.4" height="4" depth="0.2" color="#0033cc"></a-box> <a-box width="0.6" height="0.6" depth="0.5" color="#0033cc" position="0 2.2 0"> <a-plane color="white" position="0 0 0.26" width="0.4" height="0.2"></a-plane> </a-box>
+                <a-box width="0.2" height="3" depth="0.1" color="#ffff00" position="0.5 0 0"></a-box> <a-box width="0.2" height="3" depth="0.1" color="#ffff00" position="-0.5 0 0"></a-box> </a-entity>`;
+          
+          m.addEventListener('die', () => { if(m.parentNode) m.parentNode.removeChild(m); });
+          document.querySelector('a-scene').appendChild(m);
+          monsters.push(m);
       }
 
       setInterval(() => {
-          // Fly Logic
           if(isFlying) {
               const rig = document.querySelector('#rig');
               const cam = document.querySelector('#camera');
               let dir = new THREE.Vector3(0,0,-1).applyQuaternion(cam.object3D.quaternion);
-              rig.object3D.position.addScaledVector(dir, 0.15);
+              rig.object3D.position.addScaledVector(dir, 0.2);
           }
-          // Zombie Tracking
           let p = document.querySelector('#camera').object3D.position;
-          zombies.forEach(z => {
-              z.object3D.lookAt(p.x, 0, p.z);
-              z.object3D.translateZ(0.04);
-              // God Mode Check
-              if(!godMode && z.object3D.position.distanceTo(p) < 1) {
-                  // In a real game, player would lose health here
-              }
+          monsters.forEach(m => {
+              m.object3D.lookAt(p.x, 0, p.z);
+              m.object3D.translateZ(0.06);
           });
       }, 20);
     </script>
