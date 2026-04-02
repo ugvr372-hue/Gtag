@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html>
 <head>
-  <title>VR Tengeram MODDED</title>
+  <title>VR Tengeram MODDED HANDS</title>
   <style>
     body { margin: 0; overflow: hidden; }
     #menu {
@@ -13,6 +13,7 @@
       padding: 10px;
       font-family: Arial;
       display: none;
+      z-index: 100;
     }
   </style>
 </head>
@@ -29,6 +30,7 @@
 <script type="module">
 import * as THREE from "https://cdn.jsdelivr.net/npm/three@0.160/build/three.module.js";
 import { VRButton } from "https://cdn.jsdelivr.net/npm/three@0.160/examples/jsm/webxr/VRButton.js";
+import { XRHandModelFactory } from "https://cdn.jsdelivr.net/npm/three@0.160/examples/jsm/webxr/XRHandModelFactory.js";
 
 // Scene
 const scene = new THREE.Scene();
@@ -73,38 +75,56 @@ for (let i = 0; i < 80; i++) {
   scene.add(trunk);
 }
 
-// Controllers
-const c1 = renderer.xr.getController(0);
-const c2 = renderer.xr.getController(1);
-scene.add(c1);
-scene.add(c2);
+// =======================
+// 🖐️ CONTROLLERS & HANDS
+// =======================
+const controller1 = renderer.xr.getController(0);
+const controller2 = renderer.xr.getController(1);
+scene.add(controller1);
+scene.add(controller2);
+
+// Hand models
+const handFactory = new XRHandModelFactory();
+const hand1 = renderer.xr.getHand(0);
+const hand2 = renderer.xr.getHand(1);
+hand1.add(handFactory.createHandModel(hand1, "mesh"));
+hand2.add(handFactory.createHandModel(hand2, "mesh"));
+scene.add(hand1);
+scene.add(hand2);
 
 // =======================
-// 🎮 MOD STATES
+// 🎮 MODS
 // =======================
-let mods = {
-  fly: false,
-  speed: false,
-  jump: false,
-  friction: false
-};
+let mods = { fly: false, speed: false, jump: false, friction: false };
 
-// Toggle menu
+// Toggle menu with X button
 let menuVisible = false;
 const menu = document.getElementById("menu");
 
-c2.addEventListener("selectstart", () => {
-  menuVisible = !menuVisible;
-  menu.style.display = menuVisible ? "block" : "none";
-});
+// Input loop
+function handleControllerGamepad() {
+  const session = renderer.xr.getSession();
+  if (!session) return;
 
-// Toggle mods (left trigger cycles)
-c1.addEventListener("selectstart", () => {
-  mods.fly = !mods.fly;
-  updateMenu();
-});
+  session.inputSources.forEach(src => {
+    if (src.gamepad) {
+      // X button index (usually 3 for left controller)
+      if (src.handedness === "right") {
+        if (src.gamepad.buttons[3]?.pressed) {
+          menuVisible = !menuVisible;
+          menu.style.display = menuVisible ? "block" : "none";
+        }
+      }
 
-// update UI
+      // Toggle fly with left trigger (button 0)
+      if (src.handedness === "left" && src.gamepad.buttons[0]?.pressed) {
+        mods.fly = !mods.fly;
+        updateMenu();
+      }
+    }
+  });
+}
+
 function updateMenu() {
   document.getElementById("fly").textContent = mods.fly ? "ON" : "OFF";
   document.getElementById("speed").textContent = mods.speed ? "ON" : "OFF";
@@ -116,6 +136,7 @@ function updateMenu() {
 // 🧠 MOVEMENT
 // =======================
 let velocity = new THREE.Vector3();
+let lastHandPos = new THREE.Vector3();
 
 function getInput() {
   const session = renderer.xr.getSession();
@@ -123,67 +144,53 @@ function getInput() {
 
   session.inputSources.forEach(src => {
     if (src.gamepad && src.handedness === "left") {
-
-      const axes = src.gamepad.axes;
+      let axes = src.gamepad.axes;
       let x = axes[0] || axes[2] || 0;
       let y = axes[1] || axes[3] || 0;
+
+      const dead = 0.1;
+      if (Math.abs(x) < dead) x = 0;
+      if (Math.abs(y) < dead) y = 0;
 
       const camDir = new THREE.Vector3();
       camera.getWorldDirection(camDir);
       camDir.y = 0;
       camDir.normalize();
-
       const right = new THREE.Vector3();
       right.crossVectors(camDir, new THREE.Vector3(0,1,0));
 
-      let moveSpeed = mods.speed ? 0.2 : 0.08;
+      const moveSpeed = mods.speed ? 0.2 : 0.08;
 
-      // 🛸 FLY MODE (no vertical movement)
       if (mods.fly) {
-        camera.position.add(camDir.multiplyScalar(-y * moveSpeed));
-        camera.position.add(right.multiplyScalar(x * moveSpeed));
+        camera.position.add(camDir.multiplyScalar(-y*moveSpeed));
+        camera.position.add(right.multiplyScalar(x*moveSpeed));
         return;
       }
 
-      velocity.add(camDir.multiplyScalar(-y * moveSpeed));
-      velocity.add(right.multiplyScalar(x * moveSpeed));
+      velocity.add(camDir.multiplyScalar(-y*moveSpeed));
+      velocity.add(right.multiplyScalar(x*moveSpeed));
     }
   });
 }
 
 // Hand boost
-let last = new THREE.Vector3();
-
 function handBoost() {
   const pos = new THREE.Vector3();
-  c1.getWorldPosition(pos);
-
-  if (last.lengthSq() === 0) {
-    last.copy(pos);
-    return;
+  controller1.getWorldPosition(pos);
+  if (lastHandPos.lengthSq() === 0) {
+    lastHandPos.copy(pos); return;
   }
-
-  const delta = pos.clone().sub(last);
-
-  if (delta.y < -0.02) {
-    velocity.y += mods.jump ? 0.4 : 0.2;
-  }
-
-  last.copy(pos);
+  const delta = pos.clone().sub(lastHandPos);
+  if (delta.y < -0.02) velocity.y += mods.jump ? 0.4 : 0.2;
+  lastHandPos.copy(pos);
 }
 
-// Update player
+// Player update
 function updatePlayer() {
-
   if (!mods.fly) {
     camera.position.add(velocity);
-
     velocity.y -= 0.025;
-
-    if (!mods.friction) {
-      velocity.multiplyScalar(0.92);
-    }
-
+    if (!mods.friction) velocity.multiplyScalar(0.92);
     if (camera.position.y < 1.6) {
       camera.position.y = 1.6;
       velocity.y = 0;
@@ -191,14 +198,16 @@ function updatePlayer() {
   }
 }
 
-// Loop
+// =======================
+// 🔁 LOOP
+// =======================
 renderer.setAnimationLoop(() => {
+  handleControllerGamepad();
   getInput();
   handBoost();
   updatePlayer();
   renderer.render(scene, camera);
 });
 </script>
-
 </body>
 </html>
