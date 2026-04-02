@@ -1,25 +1,29 @@
 <!DOCTYPE html>
 <html>
 <head>
-  <title>VR Tengeram</title>
+  <title>VR Tengeram MODDED</title>
   <style>
     body { margin: 0; overflow: hidden; }
-    #leaderboard {
+    #menu {
       position: absolute;
       top: 10px;
-      left: 10px;
+      right: 10px;
       color: white;
-      background: rgba(0,0,0,0.5);
+      background: rgba(0,0,0,0.7);
       padding: 10px;
       font-family: Arial;
+      display: none;
     }
   </style>
 </head>
 <body>
 
-<div id="leaderboard">
-  <h3>Leaderboard</h3>
-  <ol id="scores"></ol>
+<div id="menu">
+  <h3>MOD MENU</h3>
+  <p>Fly: <span id="fly">OFF</span></p>
+  <p>Speed: <span id="speed">OFF</span></p>
+  <p>Super Jump: <span id="jump">OFF</span></p>
+  <p>No Friction: <span id="friction">OFF</span></p>
 </div>
 
 <script type="module">
@@ -52,24 +56,18 @@ const ground = new THREE.Mesh(
 ground.rotation.x = -Math.PI / 2;
 scene.add(ground);
 
-// 🌲 Forest
-for (let i = 0; i < 100; i++) {
+// Forest
+for (let i = 0; i < 80; i++) {
   const trunk = new THREE.Mesh(
     new THREE.CylinderGeometry(0.2, 0.4, 4),
     new THREE.MeshStandardMaterial({ color: 0x8B4513 })
   );
-
-  trunk.position.set(
-    (Math.random() - 0.5) * 100,
-    2,
-    (Math.random() - 0.5) * 100
-  );
+  trunk.position.set((Math.random()-0.5)*100, 2, (Math.random()-0.5)*100);
 
   const leaves = new THREE.Mesh(
     new THREE.SphereGeometry(1.5),
     new THREE.MeshStandardMaterial({ color: 0x2E8B57 })
   );
-
   leaves.position.y = 2.5;
   trunk.add(leaves);
   scene.add(trunk);
@@ -82,12 +80,43 @@ scene.add(c1);
 scene.add(c2);
 
 // =======================
-// 🧠 MOVEMENT SYSTEM
+// 🎮 MOD STATES
+// =======================
+let mods = {
+  fly: false,
+  speed: false,
+  jump: false,
+  friction: false
+};
+
+// Toggle menu
+let menuVisible = false;
+const menu = document.getElementById("menu");
+
+c2.addEventListener("selectstart", () => {
+  menuVisible = !menuVisible;
+  menu.style.display = menuVisible ? "block" : "none";
+});
+
+// Toggle mods (left trigger cycles)
+c1.addEventListener("selectstart", () => {
+  mods.fly = !mods.fly;
+  updateMenu();
+});
+
+// update UI
+function updateMenu() {
+  document.getElementById("fly").textContent = mods.fly ? "ON" : "OFF";
+  document.getElementById("speed").textContent = mods.speed ? "ON" : "OFF";
+  document.getElementById("jump").textContent = mods.jump ? "ON" : "OFF";
+  document.getElementById("friction").textContent = mods.friction ? "ON" : "OFF";
+}
+
+// =======================
+// 🧠 MOVEMENT
 // =======================
 let velocity = new THREE.Vector3();
-let speed = 0.08;
 
-// 🔥 AUTO-DETECT JOYSTICK
 function getInput() {
   const session = renderer.xr.getSession();
   if (!session) return;
@@ -96,25 +125,8 @@ function getInput() {
     if (src.gamepad && src.handedness === "left") {
 
       const axes = src.gamepad.axes;
-
-      let x = 0;
-      let y = 0;
-
-      // auto detect which axes are active
-      if (axes.length >= 2) {
-        if (Math.abs(axes[0]) > 0.01 || Math.abs(axes[1]) > 0.01) {
-          x = axes[0];
-          y = axes[1];
-        } else if (axes.length >= 4) {
-          x = axes[2];
-          y = axes[3];
-        }
-      }
-
-      // deadzone
-      const dead = 0.1;
-      if (Math.abs(x) < dead) x = 0;
-      if (Math.abs(y) < dead) y = 0;
+      let x = axes[0] || axes[2] || 0;
+      let y = axes[1] || axes[3] || 0;
 
       const camDir = new THREE.Vector3();
       camera.getWorldDirection(camDir);
@@ -124,19 +136,27 @@ function getInput() {
       const right = new THREE.Vector3();
       right.crossVectors(camDir, new THREE.Vector3(0,1,0));
 
-      velocity.add(camDir.multiplyScalar(-y * speed));
-      velocity.add(right.multiplyScalar(x * speed));
+      let moveSpeed = mods.speed ? 0.2 : 0.08;
+
+      // 🛸 FLY MODE (no vertical movement)
+      if (mods.fly) {
+        camera.position.add(camDir.multiplyScalar(-y * moveSpeed));
+        camera.position.add(right.multiplyScalar(x * moveSpeed));
+        return;
+      }
+
+      velocity.add(camDir.multiplyScalar(-y * moveSpeed));
+      velocity.add(right.multiplyScalar(x * moveSpeed));
     }
   });
 }
 
-// 🖐️ Hand boost
-let last1 = new THREE.Vector3();
-let last2 = new THREE.Vector3();
+// Hand boost
+let last = new THREE.Vector3();
 
-function handBoost(controller, last) {
+function handBoost() {
   const pos = new THREE.Vector3();
-  controller.getWorldPosition(pos);
+  c1.getWorldPosition(pos);
 
   if (last.lengthSq() === 0) {
     last.copy(pos);
@@ -146,79 +166,35 @@ function handBoost(controller, last) {
   const delta = pos.clone().sub(last);
 
   if (delta.y < -0.02) {
-    velocity.y += -delta.y * 0.2;
+    velocity.y += mods.jump ? 0.4 : 0.2;
   }
 
   last.copy(pos);
 }
 
-// 🧱 Tree collision
-function collideTrees() {
-  scene.children.forEach(obj => {
-    if (obj.geometry && obj.geometry.type === "CylinderGeometry") {
-      const dx = camera.position.x - obj.position.x;
-      const dz = camera.position.z - obj.position.z;
-      const dist = Math.sqrt(dx*dx + dz*dz);
-
-      if (dist < 1) {
-        velocity.x += dx * 0.05;
-        velocity.z += dz * 0.05;
-      }
-    }
-  });
-}
-
-// Player update
+// Update player
 function updatePlayer() {
-  camera.position.add(velocity);
 
-  velocity.y -= 0.025; // gravity
-  velocity.multiplyScalar(0.92); // friction
+  if (!mods.fly) {
+    camera.position.add(velocity);
 
-  if (camera.position.y < 1.6) {
-    camera.position.y = 1.6;
-    velocity.y = 0;
+    velocity.y -= 0.025;
+
+    if (!mods.friction) {
+      velocity.multiplyScalar(0.92);
+    }
+
+    if (camera.position.y < 1.6) {
+      camera.position.y = 1.6;
+      velocity.y = 0;
+    }
   }
-
-  collideTrees();
 }
 
-// =======================
-// 🏆 LEADERBOARD
-// =======================
-let scores = JSON.parse(localStorage.getItem("vr_scores") || "[]");
-
-function addScore() {
-  const score = Math.floor(Math.random() * 100);
-  scores.push(score);
-  scores.sort((a,b)=>b-a);
-  scores = scores.slice(0,5);
-  localStorage.setItem("vr_scores", JSON.stringify(scores));
-  renderScores();
-}
-
-function renderScores() {
-  const list = document.getElementById("scores");
-  list.innerHTML = "";
-  scores.forEach(s => {
-    const li = document.createElement("li");
-    li.textContent = s;
-    list.appendChild(li);
-  });
-}
-
-renderScores();
-
-// trigger = add score
-c1.addEventListener("selectstart", addScore);
-
-// =======================
-// 🔁 LOOP
-// =======================
+// Loop
 renderer.setAnimationLoop(() => {
   getInput();
-  handBoost(c1, last1);
-  handBoost(c2, last2);
+  handBoost();
   updatePlayer();
   renderer.render(scene, camera);
 });
