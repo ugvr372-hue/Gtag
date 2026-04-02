@@ -1,54 +1,143 @@
 <!DOCTYPE html>
 <html>
 <head>
-  <title>Simple VR Shooter</title>
-  <script src="https://aframe.io/releases/1.4.2/aframe.min.js"></script>
+  <title>VR Tengeram</title>
+  <style>
+    body { margin: 0; overflow: hidden; }
+    #leaderboard {
+      position: absolute;
+      top: 10px;
+      left: 10px;
+      background: rgba(0,0,0,0.5);
+      color: white;
+      padding: 10px;
+      font-family: Arial;
+    }
+  </style>
 </head>
 <body>
-  <a-scene>
 
-    <!-- Player Camera -->
-    <a-entity id="player" position="0 1.6 0">
-      <a-camera>
-        <a-cursor color="red"></a-cursor>
-      </a-camera>
-    </a-entity>
+<div id="leaderboard">
+  <h3>Leaderboard</h3>
+  <ol id="scores"></ol>
+</div>
 
-    <!-- Ground -->
-    <a-plane rotation="-90 0 0" width="50" height="50" color="#7BC8A4"></a-plane>
+<script type="module">
+import * as THREE from "https://cdn.jsdelivr.net/npm/three@0.160/build/three.module.js";
+import { VRButton } from "https://cdn.jsdelivr.net/npm/three@0.160/examples/jsm/webxr/VRButton.js";
 
-    <!-- Targets -->
-    <a-box position="0 1 -5" color="red" class="target"></a-box>
-    <a-box position="2 1 -6" color="blue" class="target"></a-box>
-    <a-box position="-2 1 -4" color="yellow" class="target"></a-box>
+// Scene setup
+const scene = new THREE.Scene();
+scene.background = new THREE.Color(0x88ccee);
 
-    <!-- Shooting Script -->
-    <script>
-      AFRAME.registerComponent('shoot', {
-        init: function () {
-          window.addEventListener('click', () => {
-            const camera = document.querySelector('[camera]');
-            const raycaster = new THREE.Raycaster();
-            const direction = new THREE.Vector3();
-            camera.object3D.getWorldDirection(direction);
+const camera = new THREE.PerspectiveCamera(70, window.innerWidth/window.innerHeight, 0.1, 1000);
+const renderer = new THREE.WebGLRenderer({ antialias: true });
+renderer.setSize(window.innerWidth, window.innerHeight);
+renderer.xr.enabled = true;
+document.body.appendChild(renderer.domElement);
+document.body.appendChild(VRButton.createButton(renderer));
 
-            raycaster.set(camera.object3D.position, direction);
-            const targets = document.querySelectorAll('.target');
-            const intersects = raycaster.intersectObjects(
-              Array.from(targets).map(t => t.object3D), true
-            );
+// Lighting
+const light = new THREE.HemisphereLight(0xffffff, 0x444444);
+scene.add(light);
 
-            if (intersects.length > 0) {
-              const hit = intersects[0].object.el;
-              hit.setAttribute('color', 'black'); // simulate hit
-            }
-          });
-        }
-      });
+// Ground
+const ground = new THREE.Mesh(
+  new THREE.PlaneGeometry(200, 200),
+  new THREE.MeshStandardMaterial({ color: 0x228B22 })
+);
+ground.rotation.x = -Math.PI / 2;
+scene.add(ground);
 
-      document.querySelector('#player').setAttribute('shoot', '');
-    </script>
+// 🌲 Forest generation
+for (let i = 0; i < 100; i++) {
+  const tree = new THREE.Mesh(
+    new THREE.CylinderGeometry(0.2, 0.5, 5),
+    new THREE.MeshStandardMaterial({ color: 0x8B4513 })
+  );
+  tree.position.set(
+    (Math.random() - 0.5) * 100,
+    2.5,
+    (Math.random() - 0.5) * 100
+  );
+  scene.add(tree);
 
-  </a-scene>
+  const leaves = new THREE.Mesh(
+    new THREE.SphereGeometry(2),
+    new THREE.MeshStandardMaterial({ color: 0x2E8B57 })
+  );
+  leaves.position.y = 4;
+  tree.add(leaves);
+}
+
+// 🖐️ Controllers (hands)
+const controller1 = renderer.xr.getController(0);
+const controller2 = renderer.xr.getController(1);
+scene.add(controller1);
+scene.add(controller2);
+
+// 🧠 Simple Gorilla Tag–style locomotion
+let velocity = new THREE.Vector3();
+
+function handleLocomotion(controller) {
+  if (!controller.userData.lastPos) {
+    controller.userData.lastPos = new THREE.Vector3();
+  }
+
+  const currentPos = new THREE.Vector3();
+  controller.getWorldPosition(currentPos);
+
+  const delta = currentPos.clone().sub(controller.userData.lastPos);
+
+  // Push movement (opposite direction of hand movement)
+  velocity.add(delta.multiplyScalar(-5));
+
+  controller.userData.lastPos.copy(currentPos);
+}
+
+// 🏃 Player movement
+function updateMovement() {
+  camera.position.add(velocity);
+  velocity.multiplyScalar(0.9); // friction
+}
+
+// 🏆 Leaderboard system
+let scores = JSON.parse(localStorage.getItem("scores") || "[]");
+
+function addScore(name, score) {
+  scores.push({ name, score });
+  scores.sort((a,b) => b.score - a.score);
+  scores = scores.slice(0, 5);
+  localStorage.setItem("scores", JSON.stringify(scores));
+  renderScores();
+}
+
+function renderScores() {
+  const list = document.getElementById("scores");
+  list.innerHTML = "";
+  scores.forEach(s => {
+    const li = document.createElement("li");
+    li.textContent = `${s.name}: ${s.score}`;
+    list.appendChild(li);
+  });
+}
+
+renderScores();
+
+// Example score trigger (press trigger to add score)
+controller1.addEventListener("selectstart", () => {
+  addScore("Player", Math.floor(Math.random()*100));
+});
+
+// 🔁 Animation loop
+renderer.setAnimationLoop(() => {
+  handleLocomotion(controller1);
+  handleLocomotion(controller2);
+  updateMovement();
+
+  renderer.render(scene, camera);
+});
+</script>
+
 </body>
 </html>
