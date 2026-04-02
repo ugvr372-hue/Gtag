@@ -1,9 +1,22 @@
 <!DOCTYPE html>
 <html>
 <head>
-  <title>VR Tengeram MODDED HANDS</title>
+  <title>VR Tengeram MODDED</title>
   <style>
     body { margin: 0; overflow: hidden; }
+    #loading {
+      position: absolute;
+      top: 0; left: 0;
+      width: 100%; height: 100%;
+      background: #000;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      color: white;
+      font-family: Arial;
+      font-size: 2em;
+      z-index: 100;
+    }
     #menu {
       position: absolute;
       top: 10px;
@@ -19,6 +32,8 @@
 </head>
 <body>
 
+<div id="loading">Loading VR Tengeram...</div>
+
 <div id="menu">
   <h3>MOD MENU</h3>
   <p>Fly: <span id="fly">OFF</span></p>
@@ -32,15 +47,15 @@ import * as THREE from "https://cdn.jsdelivr.net/npm/three@0.160/build/three.mod
 import { VRButton } from "https://cdn.jsdelivr.net/npm/three@0.160/examples/jsm/webxr/VRButton.js";
 import { XRHandModelFactory } from "https://cdn.jsdelivr.net/npm/three@0.160/examples/jsm/webxr/XRHandModelFactory.js";
 
-// Scene
+// =======================
+// Scene setup
+// =======================
 const scene = new THREE.Scene();
 scene.background = new THREE.Color(0x87CEEB);
 
-// Camera
 const camera = new THREE.PerspectiveCamera(70, innerWidth/innerHeight, 0.1, 1000);
 camera.position.y = 1.6;
 
-// Renderer
 const renderer = new THREE.WebGLRenderer({ antialias: true });
 renderer.setSize(innerWidth, innerHeight);
 renderer.xr.enabled = true;
@@ -55,20 +70,19 @@ const ground = new THREE.Mesh(
   new THREE.PlaneGeometry(200, 200),
   new THREE.MeshStandardMaterial({ color: 0x228B22 })
 );
-ground.rotation.x = -Math.PI / 2;
+ground.rotation.x = -Math.PI/2;
 scene.add(ground);
 
 // Forest
-for (let i = 0; i < 80; i++) {
+for (let i=0;i<80;i++){
   const trunk = new THREE.Mesh(
-    new THREE.CylinderGeometry(0.2, 0.4, 4),
-    new THREE.MeshStandardMaterial({ color: 0x8B4513 })
+    new THREE.CylinderGeometry(0.2,0.4,4),
+    new THREE.MeshStandardMaterial({ color:0x8B4513 })
   );
-  trunk.position.set((Math.random()-0.5)*100, 2, (Math.random()-0.5)*100);
-
+  trunk.position.set((Math.random()-0.5)*100,2,(Math.random()-0.5)*100);
   const leaves = new THREE.Mesh(
     new THREE.SphereGeometry(1.5),
-    new THREE.MeshStandardMaterial({ color: 0x2E8B57 })
+    new THREE.MeshStandardMaterial({color:0x2E8B57})
   );
   leaves.position.y = 2.5;
   trunk.add(leaves);
@@ -76,7 +90,7 @@ for (let i = 0; i < 80; i++) {
 }
 
 // =======================
-// 🖐️ CONTROLLERS & HANDS
+// Controllers and hands
 // =======================
 const controller1 = renderer.xr.getController(0);
 const controller2 = renderer.xr.getController(1);
@@ -87,37 +101,46 @@ scene.add(controller2);
 const handFactory = new XRHandModelFactory();
 const hand1 = renderer.xr.getHand(0);
 const hand2 = renderer.xr.getHand(1);
-hand1.add(handFactory.createHandModel(hand1, "mesh"));
-hand2.add(handFactory.createHandModel(hand2, "mesh"));
 scene.add(hand1);
 scene.add(hand2);
 
-// =======================
-// 🎮 MODS
-// =======================
-let mods = { fly: false, speed: false, jump: false, friction: false };
+// Load hands asynchronously
+Promise.all([
+  handFactory.createHandModel(hand1, "mesh"),
+  handFactory.createHandModel(hand2, "mesh")
+]).then(models => {
+  hand1.add(models[0]);
+  hand2.add(models[1]);
+  document.getElementById("loading").style.display = "none"; // hide loading
+});
 
-// Toggle menu with X button
+// =======================
+// MODS
+// =======================
+let mods = { fly:false, speed:false, jump:false, friction:false };
 let menuVisible = false;
 const menu = document.getElementById("menu");
 
-// Input loop
+// =======================
+// Movement
+// =======================
+let velocity = new THREE.Vector3();
+let lastHandPos = new THREE.Vector3();
+
 function handleControllerGamepad() {
   const session = renderer.xr.getSession();
-  if (!session) return;
+  if(!session) return;
 
-  session.inputSources.forEach(src => {
-    if (src.gamepad) {
-      // X button index (usually 3 for left controller)
-      if (src.handedness === "right") {
-        if (src.gamepad.buttons[3]?.pressed) {
-          menuVisible = !menuVisible;
-          menu.style.display = menuVisible ? "block" : "none";
-        }
+  session.inputSources.forEach(src=>{
+    if(src.gamepad){
+      // Right controller X button toggles menu (usually index 3)
+      if(src.handedness==="right" && src.gamepad.buttons[3]?.pressed){
+        menuVisible = !menuVisible;
+        menu.style.display = menuVisible?"block":"none";
       }
 
-      // Toggle fly with left trigger (button 0)
-      if (src.handedness === "left" && src.gamepad.buttons[0]?.pressed) {
+      // Left trigger toggles fly (button 0)
+      if(src.handedness==="left" && src.gamepad.buttons[0]?.pressed){
         mods.fly = !mods.fly;
         updateMenu();
       }
@@ -125,43 +148,35 @@ function handleControllerGamepad() {
   });
 }
 
-function updateMenu() {
-  document.getElementById("fly").textContent = mods.fly ? "ON" : "OFF";
-  document.getElementById("speed").textContent = mods.speed ? "ON" : "OFF";
-  document.getElementById("jump").textContent = mods.jump ? "ON" : "OFF";
-  document.getElementById("friction").textContent = mods.friction ? "ON" : "OFF";
+function updateMenu(){
+  document.getElementById("fly").textContent = mods.fly?"ON":"OFF";
+  document.getElementById("speed").textContent = mods.speed?"ON":"OFF";
+  document.getElementById("jump").textContent = mods.jump?"ON":"OFF";
+  document.getElementById("friction").textContent = mods.friction?"ON":"OFF";
 }
 
-// =======================
-// 🧠 MOVEMENT
-// =======================
-let velocity = new THREE.Vector3();
-let lastHandPos = new THREE.Vector3();
-
-function getInput() {
+function getInput(){
   const session = renderer.xr.getSession();
-  if (!session) return;
+  if(!session) return;
 
-  session.inputSources.forEach(src => {
-    if (src.gamepad && src.handedness === "left") {
+  session.inputSources.forEach(src=>{
+    if(src.gamepad && src.handedness==="left"){
       let axes = src.gamepad.axes;
       let x = axes[0] || axes[2] || 0;
       let y = axes[1] || axes[3] || 0;
-
       const dead = 0.1;
-      if (Math.abs(x) < dead) x = 0;
-      if (Math.abs(y) < dead) y = 0;
+      if(Math.abs(x)<dead) x=0;
+      if(Math.abs(y)<dead) y=0;
 
       const camDir = new THREE.Vector3();
       camera.getWorldDirection(camDir);
-      camDir.y = 0;
-      camDir.normalize();
+      camDir.y = 0; camDir.normalize();
       const right = new THREE.Vector3();
-      right.crossVectors(camDir, new THREE.Vector3(0,1,0));
+      right.crossVectors(camDir,new THREE.Vector3(0,1,0));
 
-      const moveSpeed = mods.speed ? 0.2 : 0.08;
+      const moveSpeed = mods.speed?0.2:0.08;
 
-      if (mods.fly) {
+      if(mods.fly){
         camera.position.add(camDir.multiplyScalar(-y*moveSpeed));
         camera.position.add(right.multiplyScalar(x*moveSpeed));
         return;
@@ -173,40 +188,33 @@ function getInput() {
   });
 }
 
-// Hand boost
-function handBoost() {
+function handBoost(){
   const pos = new THREE.Vector3();
   controller1.getWorldPosition(pos);
-  if (lastHandPos.lengthSq() === 0) {
-    lastHandPos.copy(pos); return;
-  }
+  if(lastHandPos.lengthSq()===0){ lastHandPos.copy(pos); return; }
   const delta = pos.clone().sub(lastHandPos);
-  if (delta.y < -0.02) velocity.y += mods.jump ? 0.4 : 0.2;
+  if(delta.y<-0.02) velocity.y += mods.jump?0.4:0.2;
   lastHandPos.copy(pos);
 }
 
-// Player update
-function updatePlayer() {
-  if (!mods.fly) {
+function updatePlayer(){
+  if(!mods.fly){
     camera.position.add(velocity);
     velocity.y -= 0.025;
-    if (!mods.friction) velocity.multiplyScalar(0.92);
-    if (camera.position.y < 1.6) {
-      camera.position.y = 1.6;
-      velocity.y = 0;
-    }
+    if(!mods.friction) velocity.multiplyScalar(0.92);
+    if(camera.position.y<1.6){ camera.position.y=1.6; velocity.y=0; }
   }
 }
 
 // =======================
-// 🔁 LOOP
+// Render loop
 // =======================
-renderer.setAnimationLoop(() => {
+renderer.setAnimationLoop(()=>{
   handleControllerGamepad();
   getInput();
   handBoost();
   updatePlayer();
-  renderer.render(scene, camera);
+  renderer.render(scene,camera);
 });
 </script>
 </body>
