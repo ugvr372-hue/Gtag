@@ -1,143 +1,66 @@
 <!DOCTYPE html>
 <html>
   <head>
-    <title>DINOVR: Poppy Playtime VR</title>
+    <title>VR Dentist Game</title>
     <script src="https://aframe.io/releases/1.4.2/aframe.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/gh/donmccurdy/aframe-extras@v7.0.0/dist/aframe-extras.min.js"></script>
-    <script src="https://unpkg.com/aframe-environment-component@1.3.2/dist/aframe-environment-component.min.js"></script>
   </head>
-  <body style="background: #000;">
-    <a-scene webxr="requiredFeatures: local-floor" loading-screen="enabled: false">
-      
-      <a-entity environment="preset: osiris; groundColor: #1a1a1a; dressingAmount: 0"></a-entity>
 
-      <a-entity id="start-menu" position="0 1.5 -1.5">
-          <a-plane width="1.2" height="0.6" color="#001a33" opacity="0.9">
-              <a-text value="POPPY PLAYTIME VR" align="center" position="0 0.2 0.01" scale="0.25 0.25 0.25" color="#ffcc00"></a-text>
-              <a-box id="btn-1hand" position="-0.3 -0.1 0.02" width="0.4" height="0.2" color="#ff0000" class="clickable">
-                  <a-text value="1 HAND" align="center" scale="0.15 0.15 0.15" position="0 0 0.06"></a-text>
-              </a-box>
-              <a-box id="btn-2hand" position="0.3 -0.1 0.02" width="0.4" height="0.2" color="#0000ff" class="clickable">
-                  <a-text value="2 HANDS" align="center" scale="0.15 0.15 0.15" position="0 0 0.06"></a-text>
-              </a-box>
-          </a-plane>
+  <body>
+    <a-scene vr-mode-ui="enabled: true">
+
+      <!-- Camera -->
+      <a-entity position="0 1.6 3">
+        <a-camera></a-camera>
       </a-entity>
 
-      <a-entity id="office" position="-5 0 -5">
-          <a-box position="0 1.5 -2.5" width="5" height="3" depth="0.2" color="#444"></a-box>
-          <a-box id="key-submit" position="0 0.85 -1.7" width="0.3" height="0.1" depth="0.15" color="#ffcc00" class="clickable">
-              <a-text value="ACTIVATE DINOVR MODS" rotation="-90 0 0" align="center" position="0 0.06 0" scale="0.1 0.1 0.1" color="black"></a-text>
-          </a-box>
-      </a-entity>
+      <!-- VR Hands -->
+      <a-entity hand-controls="left"></a-entity>
+      <a-entity hand-controls="right"></a-entity>
 
-      <a-entity id="rig" movement-controls="controls: gamepad; speed: 0.15;">
-        <a-entity id="height-offset" position="0 1 0">
-            <a-entity id="camera" camera look-controls>
-                <a-cursor fuse="false" raycaster="objects: .clickable"></a-cursor>
-                <a-entity id="mod-hud" visible="false" position="0 0 -0.4">
-                    <a-plane width="0.3" height="0.2" color="#111" opacity="0.9">
-                        <a-text value="MODS ACTIVE\nFLY: B | KILL: GRIP" align="center" color="cyan" scale="0.1 0.1 0.1"></a-text>
-                    </a-plane>
-                </a-entity>
-            </a-entity>
-        </a-entity>
+      <!-- Sky -->
+      <a-sky color="#FFE4E1"></a-sky>
 
-        <a-entity id="rightHand" oculus-touch-controls="hand: right" visible="false">
-            <a-entity id="grabpack-base" position="0 0 0.05">
-                <a-box id="red-hand" width="0.15" height="0.15" depth="0.05" color="red" position="0 0 -0.2">
-                    <a-box width="0.02" height="0.02" depth="0.5" color="black" position="0 0 0.25"></a-box> </a-box>
-            </a-entity>
-        </a-entity>
-        
-        <a-entity id="leftHand" oculus-touch-controls="hand: left" visible="false"></a-entity>
-      </a-entity>
+      <!-- Patient Head -->
+      <a-sphere position="0 1 -2" radius="1.2" color="#FFD1A4"></a-sphere>
+
+      <!-- Mouth -->
+      <a-box position="0 0.6 -1.3" width="1.5" height="0.6" depth="0.2" color="black"></a-box>
+
+      <!-- Teeth (Dirty) -->
+      <a-box class="tooth" position="-0.5 0.7 -1.2" width="0.3" height="0.4" depth="0.2" color="brown"></a-box>
+      <a-box class="tooth" position="0 0.7 -1.2" width="0.3" height="0.4" depth="0.2" color="brown"></a-box>
+      <a-box class="tooth" position="0.5 0.7 -1.2" width="0.3" height="0.4" depth="0.2" color="brown"></a-box>
+
+      <!-- UI Text -->
+      <a-text id="status"
+        value="Clean the teeth! Click them!"
+        position="-1.5 2.5 -2"
+        color="black"
+        width="4">
+      </a-text>
 
     </a-scene>
 
     <script>
-      let mode = "";
-      let modsUnlocked = false;
-      let isFlying = false;
-      let monsters = [];
+      const teeth = document.querySelectorAll('.tooth');
+      const status = document.querySelector('#status');
 
-      document.querySelector('#btn-1hand').addEventListener('click', () => { mode = "1hand"; startGame(); });
-      document.querySelector('#btn-2hand').addEventListener('click', () => { mode = "2hand"; startGame(); });
+      let cleaned = 0;
 
-      function startGame() {
-          document.querySelector('a-scene').enterVR();
-          document.querySelector('#start-menu').setAttribute('visible', 'false');
-          document.querySelector('#rightHand').setAttribute('visible', 'true');
-          document.querySelector('#rightHand').setAttribute('grabpack-logic', '');
-          
-          if(mode === "2hand") document.querySelector('#leftHand').setAttribute('visible', 'true');
-          
-          setInterval(spawnMonster, 5000);
-      }
+      teeth.forEach(tooth => {
+        tooth.addEventListener('click', () => {
+          if (tooth.getAttribute('color') === 'brown') {
+            tooth.setAttribute('color', 'white');
+            cleaned++;
 
-      // GRABPACK LOGIC
-      AFRAME.registerComponent('grabpack-logic', {
-          init: function() {
-              const hand = document.querySelector('#red-hand');
-              this.el.addEventListener('triggerdown', () => {
-                  // Fire Hand Animation
-                  hand.setAttribute('animation', 'property: position; to: 0 0 -10; dur: 300; dir: alternate; loop: 1');
-                  
-                  // Check Collision during fire
-                  setTimeout(() => {
-                    let hPos = new THREE.Vector3();
-                    hand.object3D.getWorldPosition(hPos);
-                    monsters.forEach((m, i) => {
-                        if(hPos.distanceTo(m.object3D.position) < 2) {
-                            m.emit('die');
-                            monsters.splice(i, 1);
-                        }
-                    });
-                  }, 150);
-              });
-
-              // Mod Inputs
-              this.el.addEventListener('abuttondown', () => { if(modsUnlocked) document.querySelector('#mod-hud').setAttribute('visible', true); });
-              this.el.addEventListener('bbuttondown', () => { if(modsUnlocked) isFlying = true; });
-              this.el.addEventListener('bbuttonup', () => { isFlying = false; });
-              this.el.addEventListener('gripdown', () => { if(modsUnlocked) monsters.forEach(m => m.emit('die')); });
+            if (cleaned === teeth.length) {
+              status.setAttribute('value', 'All clean! Great dentist 😎');
+            } else {
+              status.setAttribute('value', cleaned + " cleaned!");
+            }
           }
+        });
       });
-
-      document.querySelector('#key-submit').addEventListener('click', () => {
-          modsUnlocked = true;
-          document.querySelector('#key-submit').setAttribute('color', 'lime');
-      });
-
-      function spawnMonster() {
-          if(mode === "") return;
-          const m = document.createElement('a-entity');
-          const ang = Math.random() * 6.28;
-          m.setAttribute('position', `${Math.cos(ang)*20} 0 ${Math.sin(ang)*20}`);
-          
-          // HUGGY WUGGY STYLE MODEL (Boxes for performance)
-          m.innerHTML = `
-            <a-entity position="0 2 0">
-                <a-box width="0.4" height="4" depth="0.2" color="#0033cc"></a-box> <a-box width="0.6" height="0.6" depth="0.5" color="#0033cc" position="0 2.2 0"> <a-plane color="white" position="0 0 0.26" width="0.4" height="0.2"></a-plane> </a-box>
-                <a-box width="0.2" height="3" depth="0.1" color="#ffff00" position="0.5 0 0"></a-box> <a-box width="0.2" height="3" depth="0.1" color="#ffff00" position="-0.5 0 0"></a-box> </a-entity>`;
-          
-          m.addEventListener('die', () => { if(m.parentNode) m.parentNode.removeChild(m); });
-          document.querySelector('a-scene').appendChild(m);
-          monsters.push(m);
-      }
-
-      setInterval(() => {
-          if(isFlying) {
-              const rig = document.querySelector('#rig');
-              const cam = document.querySelector('#camera');
-              let dir = new THREE.Vector3(0,0,-1).applyQuaternion(cam.object3D.quaternion);
-              rig.object3D.position.addScaledVector(dir, 0.2);
-          }
-          let p = document.querySelector('#camera').object3D.position;
-          monsters.forEach(m => {
-              m.object3D.lookAt(p.x, 0, p.z);
-              m.object3D.translateZ(0.06);
-          });
-      }, 20);
     </script>
   </body>
 </html>
