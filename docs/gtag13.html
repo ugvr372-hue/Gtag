@@ -1,130 +1,54 @@
 <!DOCTYPE html>
 <html>
 <head>
-  <title>VR Dentist Simulator</title>
-
-  <!-- A-Frame -->
+  <title>Simple VR Shooter</title>
   <script src="https://aframe.io/releases/1.4.2/aframe.min.js"></script>
-
-  <!-- Physics -->
-  <script src="https://cdn.jsdelivr.net/npm/aframe-physics-system@4.0.1/dist/aframe-physics-system.min.js"></script>
 </head>
-
 <body>
-<a-scene physics="gravity: -9.8" vr-mode-ui="enabled: true">
+  <a-scene>
 
-  <!-- Player with movement -->
-  <a-entity id="rig" movement-controls="speed: 0.2">
-    
-    <a-camera position="0 1.6 0"></a-camera>
-
-    <!-- Dental Tool Hands -->
-    <a-entity id="leftHand"
-      laser-controls="hand: left"
-      raycaster="objects: .tooth"
-      line="color: blue">
-      
-      <!-- Tool visual -->
-      <a-cylinder radius="0.02" height="0.3" color="silver"></a-cylinder>
+    <!-- Player Camera -->
+    <a-entity id="player" position="0 1.6 0">
+      <a-camera>
+        <a-cursor color="red"></a-cursor>
+      </a-camera>
     </a-entity>
 
-    <a-entity id="rightHand"
-      laser-controls="hand: right"
-      raycaster="objects: .tooth"
-      line="color: red">
-      
-      <!-- Tool visual -->
-      <a-cylinder radius="0.02" height="0.3" color="white"></a-cylinder>
-    </a-entity>
+    <!-- Ground -->
+    <a-plane rotation="-90 0 0" width="50" height="50" color="#7BC8A4"></a-plane>
 
-  </a-entity>
+    <!-- Targets -->
+    <a-box position="0 1 -5" color="red" class="target"></a-box>
+    <a-box position="2 1 -6" color="blue" class="target"></a-box>
+    <a-box position="-2 1 -4" color="yellow" class="target"></a-box>
 
-  <!-- Environment -->
-  <a-plane rotation="-90 0 0" width="20" height="20" color="#ddd"></a-plane>
-  <a-sky color="#CCEFFF"></a-sky>
+    <!-- Shooting Script -->
+    <script>
+      AFRAME.registerComponent('shoot', {
+        init: function () {
+          window.addEventListener('click', () => {
+            const camera = document.querySelector('[camera]');
+            const raycaster = new THREE.Raycaster();
+            const direction = new THREE.Vector3();
+            camera.object3D.getWorldDirection(direction);
 
-  <!-- Patient Head -->
-  <a-sphere position="0 1 -3" radius="1.2" color="#FFD1A4"></a-sphere>
+            raycaster.set(camera.object3D.position, direction);
+            const targets = document.querySelectorAll('.target');
+            const intersects = raycaster.intersectObjects(
+              Array.from(targets).map(t => t.object3D), true
+            );
 
-  <!-- Mouth -->
-  <a-box position="0 0.6 -2.2" width="1.5" height="0.6" depth="0.2" color="black"></a-box>
-
-  <!-- Teeth with physics -->
-  <a-box class="tooth" position="-0.6 0.8 -2" width="0.3" height="0.4" depth="0.2"
-    color="brown" dynamic-body></a-box>
-
-  <a-box class="tooth" position="0 0.8 -2" width="0.3" height="0.4" depth="0.2"
-    color="brown" dynamic-body></a-box>
-
-  <a-box class="tooth" position="0.6 0.8 -2" width="0.3" height="0.4" depth="0.2"
-    color="brown" dynamic-body></a-box>
-
-  <!-- Floating dirt balls -->
-  <a-sphere class="dirt" position="-1 2 -3" radius="0.2" color="green" dynamic-body></a-sphere>
-  <a-sphere class="dirt" position="1 2 -3" radius="0.2" color="green" dynamic-body></a-sphere>
-
-  <!-- UI -->
-  <a-text id="status"
-    value="Move with joystick/WASD. Clean or shoot teeth!"
-    position="-2 3 -3"
-    width="5"
-    color="black"></a-text>
-
-</a-scene>
-
-<script>
-const teeth = document.querySelectorAll('.tooth');
-const status = document.querySelector('#status');
-const hands = document.querySelectorAll('[laser-controls]');
-
-let cleaned = 0;
-
-// Cleaning mechanic
-hands.forEach(hand => {
-  hand.addEventListener('triggerdown', () => {
-    const intersected = hand.components.raycaster.intersectedEls;
-
-    if (intersected.length > 0) {
-      const target = intersected[0];
-
-      if (target.classList.contains('tooth')) {
-        if (target.getAttribute('color') === 'brown') {
-          target.setAttribute('color', 'white');
-          cleaned++;
-
-          target.body.applyImpulse(
-            {x: 0, y: 2, z: -1},
-            {x: 0, y: 0, z: 0}
-          );
-
-          status.setAttribute('value', cleaned + " teeth cleaned!");
-
-          if (cleaned === teeth.length) {
-            status.setAttribute('value', "All teeth clean 😎 You're a pro dentist!");
-          }
+            if (intersects.length > 0) {
+              const hit = intersects[0].object.el;
+              hit.setAttribute('color', 'black'); // simulate hit
+            }
+          });
         }
-      }
-    }
-  });
-});
+      });
 
-// Random movement for dirt (fun physics chaos)
-setInterval(() => {
-  document.querySelectorAll('.dirt').forEach(d => {
-    if (d.body) {
-      d.body.applyImpulse(
-        {
-          x: (Math.random() - 0.5) * 2,
-          y: Math.random() * 2,
-          z: (Math.random() - 0.5) * 2
-        },
-        {x: 0, y: 0, z: 0}
-      );
-    }
-  });
-}, 2000);
+      document.querySelector('#player').setAttribute('shoot', '');
+    </script>
 
-</script>
-
+  </a-scene>
 </body>
 </html>
