@@ -26,12 +26,15 @@
 import * as THREE from "https://cdn.jsdelivr.net/npm/three@0.160/build/three.module.js";
 import { VRButton } from "https://cdn.jsdelivr.net/npm/three@0.160/examples/jsm/webxr/VRButton.js";
 
+// Scene
 const scene = new THREE.Scene();
 scene.background = new THREE.Color(0x87CEEB);
 
+// Camera
 const camera = new THREE.PerspectiveCamera(70, innerWidth/innerHeight, 0.1, 1000);
 camera.position.y = 1.6;
 
+// Renderer
 const renderer = new THREE.WebGLRenderer({ antialias: true });
 renderer.setSize(innerWidth, innerHeight);
 renderer.xr.enabled = true;
@@ -50,7 +53,7 @@ ground.rotation.x = -Math.PI / 2;
 scene.add(ground);
 
 // 🌲 Forest
-for (let i = 0; i < 80; i++) {
+for (let i = 0; i < 100; i++) {
   const trunk = new THREE.Mesh(
     new THREE.CylinderGeometry(0.2, 0.4, 4),
     new THREE.MeshStandardMaterial({ color: 0x8B4513 })
@@ -78,12 +81,43 @@ const c2 = renderer.xr.getController(1);
 scene.add(c1);
 scene.add(c2);
 
-// 🧠 LOCOMOTION (closest possible in HTML)
-let vel = new THREE.Vector3();
+// =======================
+// 🧠 MOVEMENT SYSTEM
+// =======================
+let velocity = new THREE.Vector3();
+let speed = 0.08;
+
+// joystick input
+function getInput() {
+  const session = renderer.xr.getSession();
+  if (!session) return;
+
+  session.inputSources.forEach(src => {
+    if (src.gamepad && src.handedness === "left") {
+      const axes = src.gamepad.axes;
+
+      const x = axes[2] || 0;
+      const y = axes[3] || 0;
+
+      const camDir = new THREE.Vector3();
+      camera.getWorldDirection(camDir);
+      camDir.y = 0;
+      camDir.normalize();
+
+      const right = new THREE.Vector3();
+      right.crossVectors(camDir, new THREE.Vector3(0,1,0));
+
+      velocity.add(camDir.multiplyScalar(-y * speed));
+      velocity.add(right.multiplyScalar(x * speed));
+    }
+  });
+}
+
+// 🖐️ Hand boost
 let last1 = new THREE.Vector3();
 let last2 = new THREE.Vector3();
 
-function moveFromHand(controller, last) {
+function handBoost(controller, last) {
   const pos = new THREE.Vector3();
   controller.getWorldPosition(pos);
 
@@ -94,37 +128,51 @@ function moveFromHand(controller, last) {
 
   const delta = pos.clone().sub(last);
 
-  // Only apply when pushing downward or backward
-  if (delta.length() > 0.01) {
-    vel.x += -delta.x * 8;
-    vel.z += -delta.z * 8;
-
-    // jump push
-    if (delta.y < -0.01) {
-      vel.y += -delta.y * 6;
-    }
+  if (delta.y < -0.02) {
+    velocity.y += -delta.y * 0.2;
   }
 
   last.copy(pos);
 }
 
-function updatePlayer() {
-  camera.position.add(vel);
+// 🧱 Tree collision (simple)
+function collideTrees() {
+  scene.children.forEach(obj => {
+    if (obj.geometry && obj.geometry.type === "CylinderGeometry") {
+      const dx = camera.position.x - obj.position.x;
+      const dz = camera.position.z - obj.position.z;
+      const dist = Math.sqrt(dx*dx + dz*dz);
 
-  // gravity
-  vel.y -= 0.03;
-
-  // friction
-  vel.multiplyScalar(0.9);
-
-  // ground collision
-  if (camera.position.y < 1.6) {
-    camera.position.y = 1.6;
-    vel.y = 0;
-  }
+      if (dist < 1) {
+        velocity.x += dx * 0.05;
+        velocity.z += dz * 0.05;
+      }
+    }
+  });
 }
 
-// 🏆 Leaderboard
+// player update
+function updatePlayer() {
+  camera.position.add(velocity);
+
+  // gravity
+  velocity.y -= 0.025;
+
+  // friction
+  velocity.multiplyScalar(0.92);
+
+  // ground
+  if (camera.position.y < 1.6) {
+    camera.position.y = 1.6;
+    velocity.y = 0;
+  }
+
+  collideTrees();
+}
+
+// =======================
+// 🏆 LEADERBOARD
+// =======================
 let scores = JSON.parse(localStorage.getItem("vr_scores") || "[]");
 
 function addScore() {
@@ -148,13 +196,16 @@ function renderScores() {
 
 renderScores();
 
-// trigger = add score
+// trigger = score
 c1.addEventListener("selectstart", addScore);
 
-// Loop
+// =======================
+// 🔁 LOOP
+// =======================
 renderer.setAnimationLoop(() => {
-  moveFromHand(c1, last1);
-  moveFromHand(c2, last2);
+  getInput();
+  handBoost(c1, last1);
+  handBoost(c2, last2);
   updatePlayer();
   renderer.render(scene, camera);
 });
