@@ -1,107 +1,132 @@
 <!DOCTYPE html>
 <html>
   <head>
-    <title>DINOVR: Poppy Playtime REBORN</title>
+    <title>DINOVR: Poppy Playtime + MODS</title>
     <script src="https://aframe.io/releases/1.4.2/aframe.min.js"></script>
     <script src="https://cdn.jsdelivr.net/gh/donmccurdy/aframe-extras@v7.0.0/dist/aframe-extras.min.js"></script>
   </head>
   <body style="background: #000;">
-    <a-scene webxr="requiredFeatures: local-floor" fog="type: exponential; color: #000; density: 0.15">
+    <a-scene webxr="requiredFeatures: local-floor" fog="type: exponential; color: #000; density: 0.18">
       
-      <a-assets>
-        <img id="floor-tex" src="https://i.imgur.com/8pXoA7v.jpg">
-      </a-assets>
-
       <a-sky color="black"></a-sky>
-      <a-plane rotation="-90 0 0" width="100" height="100" src="#floor-tex" repeat="40 40"></a-plane>
-
-      <a-entity id="maze">
-        <a-box position="0 1.5 -5" width="10" height="3" depth="0.2" color="#222"></a-box>
-        <a-box position="5 1.5 0" width="0.2" height="3" depth="10" color="#222"></a-box>
-        <a-box position="-5 1.5 0" width="0.2" height="3" depth="10" color="#222"></a-box>
-        <a-box position="0 3 0" width="10" height="0.2" depth="10" color="#111"></a-box> 
-      </a-entity>
+      <a-plane rotation="-90 0 0" width="100" height="100" color="#111"></a-plane>
 
       <a-entity id="huggy" position="0 0 -15" visible="false">
-          <a-box width="0.1" height="2.5" depth="0.1" position="0.2 1.25 0" color="#0033cc"></a-box>
-          <a-box width="0.1" height="2.5" depth="0.1" position="-0.2 1.25 0" color="#0033cc"></a-box>
-          <a-box width="0.4" height="1.5" depth="0.2" position="0 3.2 0" color="#0033cc">
-              <a-box width="0.1" height="2.5" depth="0.1" position="0.4 -0.5 0" rotation="0 0 -20" color="#0033cc"></a-box>
-              <a-box width="0.1" height="2.5" depth="0.1" position="-0.4 -0.5 0" rotation="0 0 20" color="#0033cc"></a-box>
-              <a-box width="0.7" height="0.7" depth="0.5" position="0 1 0" color="#0033cc">
-                  <a-plane position="0 -0.1 0.26" width="0.5" height="0.3" color="red"></a-plane> <a-sphere position="-0.15 0.2 0.26" radius="0.07" color="white"><a-sphere radius="0.02" color="black" position="0 0 0.06"></a-sphere></a-sphere>
-                  <a-sphere position="0.15 0.2 0.26" radius="0.07" color="white"><a-sphere radius="0.02" color="black" position="0 0 0.06"></a-sphere></a-sphere>
+          <a-box width="0.1" height="2.8" depth="0.1" position="0.2 1.4 0" color="#0033cc"></a-box>
+          <a-box width="0.1" height="2.8" depth="0.1" position="-0.2 1.4 0" color="#0033cc"></a-box>
+          <a-box width="0.4" height="2" depth="0.2" position="0 3.5 0" color="#0033cc">
+              <a-box width="0.7" height="0.7" depth="0.5" position="0 1.2 0.1" color="#0033cc">
+                  <a-plane color="red" position="0 -0.2 0.26" width="0.5" height="0.2"></a-plane>
+                  <a-sphere color="white" radius="0.08" position="-0.15 0.15 0.26"></a-sphere>
+                  <a-sphere color="white" radius="0.08" position="0.15 0.15 0.26"></a-sphere>
               </a-box>
           </a-box>
       </a-entity>
 
-      <a-entity id="rig" movement-controls="speed: 0.1;">
+      <a-entity id="rig" movement-controls="speed: 0.12;">
         <a-entity camera position="0 1.6 0" look-controls>
-            <a-cursor fuse="false" raycaster="objects: .interact"></a-cursor>
-            <a-light type="spot" color="#fff" intensity="0.8" distance="15" angle="30" position="0 0 0"></a-light> </a-entity>
+            <a-light type="spot" intensity="1" distance="20" angle="35"></a-light>
+            
+            <a-entity id="mod-menu" visible="false" position="0 0 -0.5">
+                <a-plane width="0.4" height="0.5" color="#111" opacity="0.9">
+                    <a-text value="DINOVR OWNER MENU" align="center" position="0 0.2 0.01" scale="0.15 0.15 0.15" color="yellow"></a-text>
+                    <a-text id="mod-god" value="[ ] GOD MODE" align="left" position="-0.15 0.05 0.01" scale="0.12 0.12 0.12" color="white"></a-text>
+                    <a-text id="mod-speed" value="[ ] ULTRA SPEED" align="left" position="-0.15 -0.05 0.01" scale="0.12 0.12 0.12" color="white"></a-text>
+                    <a-text id="mod-freeze" value="[ ] FREEZE HUGGY" align="left" position="-0.15 -0.15 0.01" scale="0.12 0.12 0.12" color="white"></a-text>
+                    <a-text value="CLICK TO TOGGLE" align="center" position="0 -0.22 0.01" scale="0.08 0.08 0.08" color="cyan"></a-text>
+                </a-plane>
+                <a-box id="hit-god" position="0 0.05 0" width="0.3" height="0.05" visible="false" class="clickable"></a-box>
+                <a-box id="hit-speed" position="0 -0.05 0" width="0.3" height="0.05" visible="false" class="clickable"></a-box>
+                <a-box id="hit-freeze" position="0 -0.15 0" width="0.3" height="0.05" visible="false" class="clickable"></a-box>
+            </a-entity>
+            <a-cursor fuse="false" raycaster="objects: .clickable"></a-cursor>
+        </a-entity>
 
-        <a-entity id="hand" oculus-touch-controls="hand: right" grabpack-v2>
-            <a-entity id="hand-model" position="0 0 -0.1">
-                <a-box width="0.05" height="0.05" depth="0.1" color="#333"></a-box>
-                <a-box id="red-hand-visual" width="0.15" height="0.15" depth="0.03" color="red" position="0 0 -0.1"></a-box>
+        <a-entity id="rightHand" oculus-touch-controls="hand: right" grabpack-mod-system>
+            <a-entity id="hand-pivot">
+                <a-box width="0.15" height="0.15" depth="0.03" color="red" position="0 0 -0.1"></a-box>
+                <a-box width="0.01" height="0.01" depth="0.5" color="black" position="0 0 0.15"></a-box>
             </a-entity>
         </a-entity>
+        
+        <a-entity id="leftHand" oculus-touch-controls="hand: left"></a-entity>
       </a-entity>
 
     </a-scene>
 
     <script>
+      let mods = { god: false, speed: false, freeze: false };
       let huggyStarted = false;
-      let handFired = false;
+      let handBusy = false;
 
-      // --- GRABPACK LOGIC ---
-      AFRAME.registerComponent('grabpack-v2', {
-        init: function() {
-          const visual = document.querySelector('#red-hand-visual');
+      // --- MOD MENU INTERACTION ---
+      function updateMenuText() {
+          document.querySelector('#mod-god').setAttribute('value', (mods.god ? "[X] " : "[ ] ") + "GOD MODE");
+          document.querySelector('#mod-god').setAttribute('color', mods.god ? "lime" : "white");
           
-          this.el.addEventListener('triggerdown', () => {
-            if(handFired) return;
-            handFired = true;
-            
-            // Fire Hand
-            visual.setAttribute('animation', 'property: position; to: 0 0 -15; dur: 500; easing: easeOutQuad');
-            
-            // Activate Huggy on first fire
-            if(!huggyStarted) {
-                huggyStarted = true;
-                const h = document.querySelector('#huggy');
-                h.setAttribute('visible', 'true');
-            }
+          document.querySelector('#mod-speed').setAttribute('value', (mods.speed ? "[X] " : "[ ] ") + "ULTRA SPEED");
+          document.querySelector('#mod-speed').setAttribute('color', mods.speed ? "lime" : "white");
+          
+          document.querySelector('#mod-freeze').setAttribute('value', (mods.freeze ? "[X] " : "[ ] ") + "FREEZE HUGGY");
+          document.querySelector('#mod-freeze').setAttribute('color', mods.freeze ? "lime" : "white");
+          
+          // Apply Speed Change
+          document.querySelector('#rig').setAttribute('movement-controls', `speed: ${mods.speed ? 0.6 : 0.12}`);
+      }
 
-            // Return Hand
-            setTimeout(() => {
-                visual.setAttribute('animation', 'property: position; to: 0 0 -0.1; dur: 800; easing: easeInQuad');
-                setTimeout(() => { handFired = false; }, 800);
-            }, 600);
-          });
-        }
+      document.querySelector('#hit-god').addEventListener('click', () => { mods.god = !mods.god; updateMenuText(); });
+      document.querySelector('#hit-speed').addEventListener('click', () => { mods.speed = !mods.speed; updateMenuText(); });
+      document.querySelector('#hit-freeze').addEventListener('click', () => { mods.freeze = !mods.freeze; updateMenuText(); });
+
+      // --- CONTROLS ---
+      AFRAME.registerComponent('grabpack-mod-system', {
+          init: function() {
+              const menu = document.querySelector('#mod-menu');
+              const hand = document.querySelector('#hand-pivot');
+
+              // Open Menu: B button or A button
+              this.el.addEventListener('bbuttondown', () => menu.setAttribute('visible', !menu.getAttribute('visible')));
+              this.el.addEventListener('abuttondown', () => menu.setAttribute('visible', !menu.getAttribute('visible')));
+
+              // Shoot Hand: Trigger
+              this.el.addEventListener('triggerdown', () => {
+                  if(handBusy) return;
+                  handBusy = true;
+                  hand.setAttribute('animation', 'property: position; to: 0 0 -15; dur: 400; easing: easeOutQuad');
+                  
+                  if(!huggyStarted) {
+                      huggyStarted = true;
+                      document.querySelector('#huggy').setAttribute('visible', 'true');
+                  }
+
+                  setTimeout(() => {
+                      hand.setAttribute('animation', 'property: position; to: 0 0 0; dur: 600; easing: easeInQuad');
+                      setTimeout(() => handBusy = false, 600);
+                  }, 400);
+              });
+          }
       });
 
       // --- HUGGY AI ---
       setInterval(() => {
-          if(!huggyStarted) return;
+          if(!huggyStarted || mods.freeze) return;
+          
           const huggy = document.querySelector('#huggy');
-          const player = document.querySelector('[camera]').object3D.position;
-          const rig = document.querySelector('#rig').object3D.position;
+          const rig = document.querySelector('#rig');
+          const cam = document.querySelector('[camera]');
+          
+          let target = rig.object3D.position;
+          huggy.object3D.lookAt(target.x, 0, target.z);
+          huggy.object3D.translateZ(0.08);
 
-          // Smooth tracking
-          huggy.object3D.lookAt(rig.x, 0, rig.z);
-          huggy.object3D.translateZ(0.08); // Huggy is faster now!
-
-          // Collision/Jumpscare
-          let dist = huggy.object3D.position.distanceTo(rig);
-          if(dist < 1.5) {
-              document.body.style.backgroundColor = "red";
-              // Reset
-              setTimeout(() => { location.reload(); }, 500);
+          // Collision Check
+          let dist = huggy.object3D.position.distanceTo(target);
+          if(dist < 1.8 && !mods.god) {
+              // Game Over
+              cam.setAttribute('animation', 'property: position; to: 0 2 1; dur: 100; loop: 4');
+              setTimeout(() => location.reload(), 1000);
           }
       }, 20);
-
     </script>
   </body>
 </html>
