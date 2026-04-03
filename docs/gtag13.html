@@ -1,14 +1,14 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>Infinite Craft VR - ULTIMATE EDITION</title>
+    <title>Infinite Craft VR - God Mode</title>
     <script src="https://aframe.io/releases/1.4.2/aframe.min.js"></script>
     <script src="https://cdn.jsdelivr.net/gh/c-frame/aframe-extras@7.0.0/dist/aframe-extras.min.js"></script>
     <script src="https://unpkg.com/super-hands@3.0.4/dist/super-hands.min.js"></script>
     <script src="https://unpkg.com/aframe-environment-component@1.3.2/dist/aframe-environment-component.min.js"></script>
 
     <script>
-        // --- 1. MASSIVE RECIPE ENGINE ---
+        // --- 1. MASSIVE RECIPE LIBRARY ---
         const recipes = {
             "Fire+Water": { name: "Steam", color: "#bdc3c7" },
             "Fire+Earth": { name: "Lava", color: "#ff6600" },
@@ -26,63 +26,60 @@
             "Coal+Fire": { name: "Diamond", color: "#b2ebf2" },
             "World+Fire": { name: "Sun", color: "#fbc02d" },
             "Sun+Stone": { name: "Planet", color: "#ffa000" },
-            "Planet+Planet": { name: "Galaxy", color: "#311b92" }
+            "Planet+Planet": { name: "Galaxy", color: "#311b92" },
+            "Galaxy+Galaxy": { name: "Universe", color: "#000000" },
+            "Metal+Wind": { name: "Blade", color: "#cfd8dc" },
+            "Blade+Plant": { name: "Paper", color: "#fafafa" },
+            "Ocean+Earth": { name: "Island", color: "#66bb6a" },
+            "Island+Island": { name: "Continent", color: "#388e3c" },
+            "Continent+Continent": { name: "World", color: "#1b5e20" }
         };
 
-        // --- 2. GRAVITY & MOVEMENT LOGIC ---
+        // --- 2. LOGIC ENGINE ---
         let gravityEnabled = false;
 
-        AFRAME.registerComponent('physics-logic', {
+        AFRAME.registerComponent('vr-controls', {
             init: function() {
-                // Toggle Mod Menu (X)
+                // X Button: Toggle Mod Menu
                 this.el.addEventListener('xbuttondown', () => {
                     const menu = document.querySelector('#menu');
-                    const isVisible = menu.getAttribute('visible');
-                    menu.setAttribute('visible', !isVisible);
+                    menu.setAttribute('visible', !menu.getAttribute('visible'));
                 });
 
-                // Toggle Gravity (Y)
+                // Y Button: Toggle Gravity
                 this.el.addEventListener('ybuttondown', () => {
                     gravityEnabled = !gravityEnabled;
-                    const status = gravityEnabled ? "ENABLED" : "DISABLED";
-                    console.log("Gravity: " + status);
-                    
-                    // Visual feedback on the wrist
-                    document.querySelector('#grav-status').setAttribute('value', "Gravity: " + status);
-                    document.querySelector('#grav-status').setAttribute('color', gravityEnabled ? "#00ff00" : "#ff0000");
+                    const statusText = gravityEnabled ? "Gravity: ON" : "Gravity: OFF";
+                    document.querySelector('#grav-label').setAttribute('value', statusText);
                 });
             },
-            tick: function(t, dt) {
-                if (!gravityEnabled) return;
-                
-                const items = document.querySelectorAll('.item');
-                items.forEach(item => {
-                    if (!item.is('grabbed')) {
-                        let pos = item.getAttribute('position');
-                        if (pos.y > 0.2) { // Don't fall through the floor
-                            pos.y -= 0.01;
-                            item.setAttribute('position', pos);
+            tick: function() {
+                if (gravityEnabled) {
+                    document.querySelectorAll('.item').forEach(item => {
+                        if (!item.is('grabbed')) {
+                            let pos = item.getAttribute('position');
+                            if (pos.y > 0.1) {
+                                pos.y -= 0.015;
+                                item.setAttribute('position', pos);
+                            }
                         }
-                    }
-                });
+                    });
+                }
             }
         });
 
-        // --- 3. CRAFTING & HAPTICS ---
-        function pulse(hand, force, duration) {
+        function hapticPulse(hand, force, dur) {
             const controller = hand.components['tracked-controls']?.controller;
-            if (controller?.hapticActuators?.length > 0) {
-                controller.hapticActuators[0].pulse(force, duration);
-            }
+            controller?.hapticActuators?.[0]?.pulse(force, dur);
         }
 
-        function createNewElement(name, color, pos) {
+        function createNew(name, color, pos) {
             const world = document.querySelector('#world');
-            const newEl = document.createElement('a-entity');
-            newEl.setAttribute('mixin', 'element-mixin');
-            newEl.setAttribute('material', `color: ${color}`);
-            newEl.setAttribute('position', pos);
-            newEl.setAttribute('data-name', name);
+            const el = document.createElement('a-entity');
+            el.setAttribute('mixin', 'element-mixin');
+            el.setAttribute('material', `color: ${color}`);
+            el.setAttribute('position', pos);
+            el.setAttribute('data-name', name);
             
             const txt = document.createElement('a-text');
             txt.setAttribute('value', name);
@@ -90,12 +87,10 @@
             txt.setAttribute('position', '0 0 0.06');
             txt.setAttribute('width', '2.5');
             
-            newEl.appendChild(txt);
-            world.appendChild(newEl);
-
-            // Crafting Pulse (Strong)
-            pulse(document.querySelector('#leftHand'), 0.8, 200);
-            pulse(document.querySelector('#rightHand'), 0.8, 200);
+            el.appendChild(txt);
+            world.appendChild(el);
+            hapticPulse(document.querySelector('#leftHand'), 0.8, 150);
+            hapticPulse(document.querySelector('#rightHand'), 0.8, 150);
         }
 
         setInterval(() => {
@@ -103,23 +98,17 @@
             for (let i = 0; i < items.length; i++) {
                 for (let j = i + 1; j < items.length; j++) {
                     const a = items[i]; const b = items[j];
-                    const dist = a.object3D.position.distanceTo(b.object3D.position);
-
-                    if (dist < 0.25 && a.is('grabbed') && b.is('grabbed')) {
-                        const n1 = a.getAttribute('data-name');
-                        const n2 = b.getAttribute('data-name');
-                        const combo = recipes[`${n1}+${n2}`] || recipes[`${n2}+${n1}`];
-
-                        if (combo) {
-                            const mid = {
-                                x: (a.object3D.position.x + b.object3D.position.x) / 2,
-                                y: (a.object3D.position.y + b.object3D.position.y) / 2,
-                                z: (a.object3D.position.z + b.object3D.position.z) / 2
-                            };
-                            createNewElement(combo.name, combo.color, mid);
-                            // Teleport original items back to prevent spamming
-                            a.setAttribute('position', {x: -1, y: 1.5, z: -1});
-                            b.setAttribute('position', {x: 1, y: 1.5, z: -1});
+                    if (a.is('grabbed') && b.is('grabbed')) {
+                        if (a.object3D.position.distanceTo(b.object3D.position) < 0.25) {
+                            const combo = recipes[`${a.getAttribute('data-name')}+${b.getAttribute('data-name')}`] || 
+                                          recipes[`${b.getAttribute('data-name')}+${a.getAttribute('data-name')}`];
+                            if (combo) {
+                                const pos = a.object3D.position;
+                                createNew(combo.name, combo.color, {x: pos.x, y: pos.y + 0.3, z: pos.z});
+                                // Put ingredients back slightly
+                                a.setAttribute('position', {x: pos.x - 0.4, y: pos.y, z: pos.z});
+                                b.setAttribute('position', {x: pos.x + 0.4, y: pos.y, z: pos.z});
+                            }
                         }
                     }
                 }
@@ -132,66 +121,46 @@
     <a-scene renderer="antialias: true">
         <a-assets>
             <a-mixin id="element-mixin" 
-                     geometry="primitive: box; width: 0.3; height: 0.3; depth: 0.08"
-                     hoverable grabbable
-                     class="clickable item"
-                     animation__spawn="property: scale; from: 0 0 0; to: 1 1 1; dur: 400; easing: easeOutBack"></a-mixin>
-            <a-mixin id="menu-btn" geometry="primitive: plane; width: 0.5; height: 0.12" material="color: #222" class="clickable"></a-mixin>
+                     geometry="primitive: box; width: 0.35; height: 0.35; depth: 0.08"
+                     hoverable grabbable class="clickable item"
+                     animation="property: scale; from: 0 0 0; to: 1 1 1; dur: 400; easing: easeOutBack"></a-mixin>
+            <a-mixin id="btn" geometry="primitive: plane; width: 0.5; height: 0.12" material="color: #222" class="clickable"></a-mixin>
         </a-assets>
 
         <a-entity environment="preset: starry; ground: flat; groundColor: #050505; grid: dots"></a-entity>
 
         <a-entity id="rig" movement-controls="speed: 0.15">
             <a-entity camera position="0 1.6 0" look-controls>
-                <a-cursor raycaster="objects: .clickable" color="cyan"></a-cursor>
+                <a-cursor raycaster="objects: .clickable" color="white"></a-cursor>
             </a-entity>
             
-            <a-entity id="leftHand" physics-logic
-                      sphere-collider="objects: .item" 
-                      super-hands 
-                      hand-controls="hand: left"
-                      oculus-touch-controls="hand: left">
-                
-                <a-entity id="menu" visible="false" position="0.12 0.1 0" rotation="-90 0 0">
-                    <a-plane width="0.7" height="1" color="#111" opacity="0.95">
-                        <a-text value="CRAFT MODS" align="center" position="0 0.4 0.01" width="2.5"></a-text>
+            <a-entity id="leftHand" vr-controls super-hands hand-controls="hand: left" oculus-touch-controls="hand: left">
+                <a-entity id="menu" visible="false" position="0.15 0.1 0" rotation="-90 0 0">
+                    <a-plane width="0.7" height="1.1" color="#111" opacity="0.9">
+                        <a-text value="GOD MODS (X/Y)" align="center" position="0 0.45 0.01" width="3"></a-text>
+                        <a-text id="grav-label" value="Gravity: OFF" align="center" position="0 0.35 0.01" width="2" color="cyan"></a-text>
                         
-                        <a-text id="grav-status" value="Gravity: DISABLED" align="center" position="0 0.3 0.01" width="2" color="red"></a-text>
-                        
-                        <a-entity position="0 0.1 0.01" mixin="menu-btn" onclick="createNewElement('Sun', '#fbc02d', {x:0, y:2, z:-1})">
+                        <a-entity position="0 0.1 0.01" mixin="btn" onclick="createNew('Galaxy', '#311b92', {x:0, y:2, z:-1})">
+                            <a-text value="Cheat: Galaxy" align="center" width="2"></a-text>
+                        </a-entity>
+                        <a-entity position="0 -0.1 0.01" mixin="btn" onclick="createNew('Sun', '#fbc02d', {x:0, y:2, z:-1})">
                             <a-text value="Cheat: Sun" align="center" width="2"></a-text>
                         </a-entity>
-                        <a-entity position="0 -0.1 0.01" mixin="menu-btn" onclick="createNewElement('Diamond', '#b2ebf2', {x:0, y:2, z:-1})">
-                            <a-text value="Cheat: Diamond" align="center" width="2"></a-text>
-                        </a-entity>
-                        <a-entity position="0 -0.3 0.01" mixin="menu-btn" onclick="location.reload()">
+                        <a-entity position="0 -0.35 0.01" mixin="btn" onclick="location.reload()">
                             <a-text value="Reset World" align="center" width="2" color="red"></a-text>
                         </a-entity>
                     </a-plane>
                 </a-entity>
             </a-entity>
             
-            <a-entity id="rightHand" 
-                      sphere-collider="objects: .item" 
-                      super-hands 
-                      hand-controls="hand: right"
-                      oculus-touch-controls="hand: right">
-            </a-entity>
+            <a-entity id="rightHand" super-hands hand-controls="hand: right" oculus-touch-controls="hand: right"></a-entity>
         </a-entity>
 
         <a-entity id="world">
-            <a-entity mixin="element-mixin" position="-0.4 1.4 -0.8" material="color: #f44336" data-name="Fire">
-                <a-text value="Fire" align="center" position="0 0 0.06" width="2"></a-text>
-            </a-entity>
-            <a-entity mixin="element-mixin" position="0.4 1.4 -0.8" material="color: #2196f3" data-name="Water">
-                <a-text value="Water" align="center" position="0 0 0.06" width="2"></a-text>
-            </a-entity>
-            <a-entity mixin="element-mixin" position="-0.4 1.8 -0.8" material="color: #795548" data-name="Earth">
-                <a-text value="Earth" align="center" position="0 0 0.06" width="2"></a-text>
-            </a-entity>
-            <a-entity mixin="element-mixin" position="0.4 1.8 -0.8" material="color: #eceff1" data-name="Wind">
-                <a-text value="Wind" align="center" position="0 0 0.06" width="2" color="black"></a-text>
-            </a-entity>
+            <a-entity mixin="element-mixin" position="-0.5 1.5 -1" material="color: #ff4444" data-name="Fire"><a-text value="Fire" align="center" position="0 0 0.06" width="2"></a-text></a-entity>
+            <a-entity mixin="element-mixin" position="0.5 1.5 -1" material="color: #4444ff" data-name="Water"><a-text value="Water" align="center" position="0 0 0.06" width="2"></a-text></a-entity>
+            <a-entity mixin="element-mixin" position="-0.5 2.0 -1" material="color: #795548" data-name="Earth"><a-text value="Earth" align="center" position="0 0 0.06" width="2"></a-text></a-entity>
+            <a-entity mixin="element-mixin" position="0.5 2.0 -1" material="color: #ffffff" data-name="Wind"><a-text value="Wind" align="center" position="0 0 0.06" width="2" color="black"></a-text></a-entity>
         </a-entity>
 
     </a-scene>
