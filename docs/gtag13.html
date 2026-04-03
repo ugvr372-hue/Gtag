@@ -1,133 +1,157 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>Infinite Craft VR</title>
+    <title>Infinite Craft VR - Pro</title>
     <script src="https://aframe.io/releases/1.4.0/aframe.min.js"></script>
     <script src="https://unpkg.com/aframe-environment-component@1.3.2/dist/aframe-environment-component.min.js"></script>
     <script src="https://cdn.jsdelivr.net/gh/donmccurdy/aframe-extras@v6.1.1/dist/aframe-extras.min.js"></script>
     <script src="https://unpkg.com/super-hands@^3.0.3/dist/super-hands.min.js"></script>
+    
+    <script>
+        // 1. FLOATING MOVEMENT COMPONENT
+        AFRAME.registerComponent('floaty', {
+            init: function() {
+                this.seed = Math.random() * 100;
+            },
+            tick: function(t) {
+                // If the object is being grabbed, don't float it
+                if (this.el.is('grabbed')) return;
+                
+                const yOffset = Math.sin((t / 1000) + this.seed) * 0.2;
+                const xOffset = Math.cos((t / 1500) + this.seed) * 0.1;
+                let pos = this.el.getAttribute('position');
+                this.el.setAttribute('position', {
+                    x: pos.x + (xOffset * 0.01), 
+                    y: pos.y + (yOffset * 0.005), 
+                    z: pos.z
+                });
+            }
+        });
+
+        // 2. COMBINE ON GRAB COLLISION
+        AFRAME.registerComponent('craftable', {
+            init: function() {
+                this.el.addEventListener('collidewith', (e) => {
+                    const otherEl = e.detail.otherEl;
+                    // Only craft if BOTH are being grabbed by the player
+                    if (this.el.is('grabbed') && otherEl.is('grabbed')) {
+                        combine(this.el, otherEl);
+                    }
+                });
+            }
+        });
+    </script>
 </head>
 <body>
 
-    <a-scene>
+    <a-scene physics="gravity: 0; debug: false">
         <a-assets>
-            <a-mixin id="element-box" 
-                     geometry="primitive: box; width: 0.6; height: 0.2; depth: 0.6"
-                     hoverable grabbable stretchable draggable droppable
-                     shadow></a-mixin>
+            <a-mixin id="element" 
+                     geometry="primitive: box; width: 0.5; height: 0.5; depth: 0.1"
+                     hoverable grabbable draggable droppable
+                     floaty craftable
+                     class="clickable item"></a-mixin>
         </a-assets>
 
-        <a-entity environment="preset: contact; seed: 4; dressingAmount: 10"></a-entity>
+        <a-entity environment="preset: starry; groundColor: #111; grid: dots"></a-entity>
 
-        <a-entity>
-            <a-camera>
+        <a-entity id="rig" movement-controls="controls: checkpoint, gamepad, keyboard, touch; speed: 0.2">
+            <a-entity camera position="0 1.6 0" look-controls>
                 <a-cursor raycaster="objects: .clickable"></a-cursor>
-            </a-camera>
-            <a-entity sphere-collider="objects: .clickable" super-hands hand-controls="hand: left"></a-entity>
-            <a-entity sphere-collider="objects: .clickable" super-hands hand-controls="hand: right"></a-entity>
-        </a-entity>
-
-        <a-box position="0 0.8 -1.5" width="3" height="0.1" depth="1.5" color="#444" static-body>
-            <a-text value="CRAFTING TABLE" align="center" position="0 0.1 0" rotation="-90 0 0" width="4" color="white"></a-text>
-        </a-box>
-
-        <a-entity id="world-elements">
-            <a-entity id="fire" mixin="element-box" position="-0.9 1 -1.2" material="color: #e74c3c" class="clickable item" data-name="Fire">
-                <a-text value="Fire 🔥" align="center" position="0 0.15 0" rotation="-90 0 0" width="3" color="white"></a-text>
             </a-entity>
             
-            <a-entity id="water" mixin="element-box" position="-0.3 1 -1.2" material="color: #3498db" class="clickable item" data-name="Water">
-                <a-text value="Water 💧" align="center" position="0 0.15 0" rotation="-90 0 0" width="3" color="white"></a-text>
+            <a-entity sphere-collider="objects: .item" 
+                      super-hands 
+                      hand-controls="hand: left"
+                      oculus-touch-controls="hand: left">
+            </a-entity>
+            
+            <a-entity sphere-collider="objects: .item" 
+                      super-hands 
+                      hand-controls="hand: right"
+                      oculus-touch-controls="hand: right">
+            </a-entity>
+        </a-entity>
+
+        <a-entity id="world">
+            <a-entity mixin="element" position="-1 1.5 -2" material="color: #ff4444" data-name="Fire">
+                <a-text value="Fire" align="center" position="0 0 0.06" width="4"></a-text>
             </a-entity>
 
-            <a-entity id="earth" mixin="element-box" position="0.3 1 -1.2" material="color: #795548" class="clickable item" data-name="Earth">
-                <a-text value="Earth 🌱" align="center" position="0 0.15 0" rotation="-90 0 0" width="3" color="white"></a-text>
+            <a-entity mixin="element" position="1 1.5 -2" material="color: #4444ff" data-name="Water">
+                <a-text value="Water" align="center" position="0 0 0.06" width="4"></a-text>
             </a-entity>
 
-            <a-entity id="wind" mixin="element-box" position="0.9 1 -1.2" material="color: #ecf0f1" class="clickable item" data-name="Wind">
-                <a-text value="Wind 🌬️" align="center" position="0 0.15 0" rotation="-90 0 0" width="3" color="#333"></a-text>
+            <a-entity mixin="element" position="-1 2.5 -2" material="color: #44ff44" data-name="Earth">
+                <a-text value="Earth" align="center" position="0 0 0.06" width="4"></a-text>
+            </a-entity>
+
+            <a-entity mixin="element" position="1 2.5 -2" material="color: #ffffff" data-name="Wind">
+                <a-text value="Wind" align="center" position="0 0 0.06" width="4" color="black"></a-text>
             </a-entity>
         </a-entity>
 
     </a-scene>
 
     <script>
-        // RECIPE DATABASE
         const recipes = {
-            "Fire+Water": { name: "Steam", emoji: "💨", color: "#bdc3c7" },
-            "Fire+Earth": { name: "Lava", emoji: "🌋", color: "#ff4500" },
-            "Water+Earth": { name: "Mud", emoji: "💩", color: "#4e342e" },
-            "Fire+Wind": { name: "Smoke", emoji: "🌫️", color: "#7f8c8d" },
-            "Water+Wind": { name: "Wave", emoji: "🌊", color: "#1abc9c" },
-            "Earth+Wind": { name: "Dust", emoji: "🧹", color: "#d2b48c" },
-            "Lava+Water": { name: "Stone", emoji: "🪨", color: "#95a5a6" },
-            "Steam+Air": { name: "Cloud", emoji: "☁️", color: "#ffffff" }
+            "Fire+Water": { name: "Steam", color: "#bdc3c7" },
+            "Fire+Earth": { name: "Lava", color: "#e67e22" },
+            "Water+Earth": { name: "Mud", color: "#795548" },
+            "Earth+Wind": { name: "Dust", color: "#f1c40f" }
         };
 
-        // CRAFTING LOGIC
-        AFRAME.registerComponent('craft-detector', {
-            init: function () {
-                this.el.addEventListener('collidestart', (e) => {
-                    const target = e.detail.targetEl;
-                    if (this.el.classList.contains('item') && target.classList.contains('item')) {
-                        combine(this.el, target);
+        function combine(el1, el2) {
+            const n1 = el1.getAttribute('data-name');
+            const n2 = el2.getAttribute('data-name');
+            const combo = recipes[`${n1}+${n2}`] || recipes[`${n2}+${n1}`];
+
+            if (combo) {
+                // Get midpoint for new element
+                const p1 = el1.object3D.position;
+                const p2 = el2.object3D.position;
+                const mid = { x: (p1.x + p2.x)/2, y: (p1.y + p2.y)/2, z: (p1.z + p2.z)/2 };
+
+                // Create the new element
+                createNew(combo.name, combo.color, mid);
+
+                // "Poof" effect: Move the old elements back to start positions
+                el1.setAttribute('position', `${(Math.random()-0.5)*2} 1.5 -2`);
+                el2.setAttribute('position', `${(Math.random()-0.5)*2} 1.5 -2`);
+            }
+        }
+
+        function createNew(name, color, pos) {
+            const world = document.querySelector('#world');
+            const newEl = document.createElement('a-entity');
+            newEl.setAttribute('mixin', 'element');
+            newEl.setAttribute('material', `color: ${color}`);
+            newEl.setAttribute('position', pos);
+            newEl.setAttribute('data-name', name);
+            
+            const txt = document.createElement('a-text');
+            txt.setAttribute('value', name);
+            txt.setAttribute('align', 'center');
+            txt.setAttribute('position', '0 0 0.06');
+            txt.setAttribute('width', '4');
+            
+            newEl.appendChild(txt);
+            world.appendChild(newEl);
+        }
+
+        // Custom Collision logic for super-hands
+        setInterval(() => {
+            const items = document.querySelectorAll('.item');
+            items.forEach(a => {
+                items.forEach(b => {
+                    if (a === b) return;
+                    const dist = a.object3D.position.distanceTo(b.object3D.position);
+                    if (dist < 0.4) {
+                        a.emit('collidewith', {otherEl: b});
                     }
                 });
-            }
-        });
-
-        function combine(el1, el2) {
-            const name1 = el1.getAttribute('data-name');
-            const name2 = el2.getAttribute('data-name');
-            
-            // Check both combinations (A+B or B+A)
-            const combo1 = `${name1}+${name2}`;
-            const combo2 = `${name2}+${name1}`;
-            const result = recipes[combo1] || recipes[combo2];
-
-            if (result) {
-                // Get position for the new element
-                const pos = el1.object3D.position;
-                
-                // Create New Element
-                createNewElement(result.name, result.emoji, result.color, pos.x, pos.y + 0.5, pos.z);
-                
-                // Optional: Delete old ones or return to table
-                el1.setAttribute('position', `${(Math.random()-0.5)*2} 1 -1.2`);
-                el2.setAttribute('position', `${(Math.random()-0.5)*2} 1 -1.2`);
-            }
-        }
-
-        function createNewElement(name, emoji, color, x, y, z) {
-            const scene = document.querySelector('#world-elements');
-            const newEl = document.createElement('a-entity');
-            
-            newEl.setAttribute('mixin', 'element-box');
-            newEl.setAttribute('class', 'clickable item');
-            newEl.setAttribute('data-name', name);
-            newEl.setAttribute('material', `color: ${color}`);
-            newEl.setAttribute('position', `${x} ${y} ${z}`);
-            
-            const text = document.createElement('a-text');
-            text.setAttribute('value', `${name} ${emoji}`);
-            text.setAttribute('align', 'center');
-            text.setAttribute('position', '0 0.15 0');
-            text.setAttribute('rotation', '-90 0 0');
-            text.setAttribute('width', '3');
-            text.setAttribute('color', 'white');
-            
-            newEl.appendChild(text);
-            scene.appendChild(newEl);
-            
-            // Add sound effect or particles here!
-            console.log("Unlocked: " + name);
-        }
-
-        // Initialize collision detection on starting items
-        document.querySelectorAll('.item').forEach(el => {
-            el.setAttribute('craft-detector', '');
-            el.setAttribute('aabb-collider', 'objects: .item');
-        });
+            });
+        }, 100);
     </script>
 </body>
 </html>
