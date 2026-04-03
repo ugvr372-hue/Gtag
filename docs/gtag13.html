@@ -1,168 +1,132 @@
 <!DOCTYPE html>
 <html>
-<head>
-    <title>Infinite Craft VR - God Mode</title>
-    <script src="https://aframe.io/releases/1.4.2/aframe.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/gh/c-frame/aframe-extras@7.0.0/dist/aframe-extras.min.js"></script>
-    <script src="https://unpkg.com/super-hands@3.0.4/dist/super-hands.min.js"></script>
-    <script src="https://unpkg.com/aframe-environment-component@1.3.2/dist/aframe-environment-component.min.js"></script>
-
+  <head>
+    <meta charset="utf-8">
+    <title>A-Frame VR Shooter - Urban Industrial</title>
+    <script src="https://aframe.io/releases/1.5.0/aframe.min.js"></script>
+    <script src="https://unpkg.com/aframe-environment-component@1.3.3/dist/aframe-environment-component.min.js"></script>
+    
     <script>
-        // --- 1. MASSIVE RECIPE LIBRARY ---
-        const recipes = {
-            "Fire+Water": { name: "Steam", color: "#bdc3c7" },
-            "Fire+Earth": { name: "Lava", color: "#ff6600" },
-            "Water+Earth": { name: "Mud", color: "#6d4c41" },
-            "Earth+Wind": { name: "Dust", color: "#d2b48c" },
-            "Fire+Wind": { name: "Smoke", color: "#777777" },
-            "Water+Wind": { name: "Wave", color: "#00ccff" },
-            "Lava+Water": { name: "Stone", color: "#90a4ae" },
-            "Stone+Fire": { name: "Metal", color: "#b0bec5" },
-            "Steam+Earth": { name: "Geyser", color: "#64b5f6" },
-            "Cloud+Water": { name: "Rain", color: "#4fc3f7" },
-            "Rain+Earth": { name: "Plant", color: "#81c784" },
-            "Plant+Plant": { name: "Tree", color: "#2e7d32" },
-            "Tree+Fire": { name: "Coal", color: "#222" },
-            "Coal+Fire": { name: "Diamond", color: "#b2ebf2" },
-            "World+Fire": { name: "Sun", color: "#fbc02d" },
-            "Sun+Stone": { name: "Planet", color: "#ffa000" },
-            "Planet+Planet": { name: "Galaxy", color: "#311b92" },
-            "Galaxy+Galaxy": { name: "Universe", color: "#000000" },
-            "Metal+Wind": { name: "Blade", color: "#cfd8dc" },
-            "Blade+Plant": { name: "Paper", color: "#fafafa" },
-            "Ocean+Earth": { name: "Island", color: "#66bb6a" },
-            "Island+Island": { name: "Continent", color: "#388e3c" },
-            "Continent+Continent": { name: "World", color: "#1b5e20" }
-        };
+      let score = 0;
 
-        // --- 2. LOGIC ENGINE ---
-        let gravityEnabled = false;
+      // Bullet Component
+      AFRAME.registerComponent('bullet', {
+        schema: { speed: { default: 25 } },
+        init: function () {
+          this.direction = new THREE.Vector3();
+        },
+        tick: function (time, delta) {
+          if (!this.el.getAttribute('visible')) return;
 
-        AFRAME.registerComponent('vr-controls', {
-            init: function() {
-                // X Button: Toggle Mod Menu
-                this.el.addEventListener('xbuttondown', () => {
-                    const menu = document.querySelector('#menu');
-                    menu.setAttribute('visible', !menu.getAttribute('visible'));
-                });
+          const distance = (this.data.speed * delta) / 1000;
+          this.el.object3D.translateZ(-distance);
 
-                // Y Button: Toggle Gravity
-                this.el.addEventListener('ybuttondown', () => {
-                    gravityEnabled = !gravityEnabled;
-                    const statusText = gravityEnabled ? "Gravity: ON" : "Gravity: OFF";
-                    document.querySelector('#grav-label').setAttribute('value', statusText);
-                });
-            },
-            tick: function() {
-                if (gravityEnabled) {
-                    document.querySelectorAll('.item').forEach(item => {
-                        if (!item.is('grabbed')) {
-                            let pos = item.getAttribute('position');
-                            if (pos.y > 0.1) {
-                                pos.y -= 0.015;
-                                item.setAttribute('position', pos);
-                            }
-                        }
-                    });
-                }
+          const bulletPos = this.el.object3D.position;
+          const enemies = document.querySelectorAll('.enemy');
+          
+          enemies.forEach((enemy) => {
+            if (bulletPos.distanceTo(enemy.object3D.position) < 0.7) {
+              this.hit(enemy);
             }
-        });
+          });
 
-        function hapticPulse(hand, force, dur) {
-            const controller = hand.components['tracked-controls']?.controller;
-            controller?.hapticActuators?.[0]?.pulse(force, dur);
+          if (bulletPos.length() > 40) { this.reset(); }
+        },
+        hit: function (enemy) {
+          score += 100;
+          const explosion = document.querySelector('#explosion-template').cloneNode(true);
+          explosion.setAttribute('position', enemy.getAttribute('position'));
+          explosion.setAttribute('visible', 'true');
+          this.el.sceneEl.appendChild(explosion);
+          
+          enemy.parentNode.removeChild(enemy);
+          setTimeout(() => { if(explosion.parentNode) explosion.parentNode.removeChild(explosion) }, 500);
+          this.reset();
+        },
+        reset: function() {
+          this.el.setAttribute('visible', false);
+          this.el.pause();
         }
+      });
 
-        function createNew(name, color, pos) {
-            const world = document.querySelector('#world');
-            const el = document.createElement('a-entity');
-            el.setAttribute('mixin', 'element-mixin');
-            el.setAttribute('material', `color: ${color}`);
-            el.setAttribute('position', pos);
-            el.setAttribute('data-name', name);
-            
-            const txt = document.createElement('a-text');
-            txt.setAttribute('value', name);
-            txt.setAttribute('align', 'center');
-            txt.setAttribute('position', '0 0 0.06');
-            txt.setAttribute('width', '2.5');
-            
-            el.appendChild(txt);
-            world.appendChild(el);
-            hapticPulse(document.querySelector('#leftHand'), 0.8, 150);
-            hapticPulse(document.querySelector('#rightHand'), 0.8, 150);
+      // Shooter Component
+      AFRAME.registerComponent('shooter', {
+        init: function () {
+          this.bulletIdx = 0;
+          this.bullets = [];
+          
+          for (let i = 0; i < 15; i++) {
+            let b = document.createElement('a-sphere');
+            b.setAttribute('radius', '0.05');
+            b.setAttribute('color', '#FFD700');
+            b.setAttribute('bullet', '');
+            b.setAttribute('visible', false);
+            this.el.sceneEl.appendChild(b);
+            this.bullets.push(b);
+          }
+
+          // Support both VR Controllers and Desktop Click
+          this.el.addEventListener('triggerdown', () => this.fire());
+          window.addEventListener('mousedown', () => this.fire());
+        },
+        fire: function () {
+          const flash = document.querySelector('#muzzle-flash');
+          if(flash) {
+            flash.setAttribute('visible', true);
+            setTimeout(() => flash.setAttribute('visible', false), 50);
+          }
+
+          const bullet = this.bullets[this.bulletIdx];
+          const worldPos = new THREE.Vector3();
+          const worldDir = new THREE.Quaternion();
+          
+          this.el.object3D.getWorldPosition(worldPos);
+          this.el.object3D.getWorldQuaternion(worldDir);
+
+          bullet.object3D.position.copy(worldPos);
+          bullet.object3D.applyQuaternion(worldDir);
+          bullet.setAttribute('visible', true);
+          bullet.play();
+
+          this.bulletIdx = (this.bulletIdx + 1) % this.bullets.length;
         }
+      });
 
-        setInterval(() => {
-            const items = Array.from(document.querySelectorAll('.item'));
-            for (let i = 0; i < items.length; i++) {
-                for (let j = i + 1; j < items.length; j++) {
-                    const a = items[i]; const b = items[j];
-                    if (a.is('grabbed') && b.is('grabbed')) {
-                        if (a.object3D.position.distanceTo(b.object3D.position) < 0.25) {
-                            const combo = recipes[`${a.getAttribute('data-name')}+${b.getAttribute('data-name')}`] || 
-                                          recipes[`${b.getAttribute('data-name')}+${a.getAttribute('data-name')}`];
-                            if (combo) {
-                                const pos = a.object3D.position;
-                                createNew(combo.name, combo.color, {x: pos.x, y: pos.y + 0.3, z: pos.z});
-                                // Put ingredients back slightly
-                                a.setAttribute('position', {x: pos.x - 0.4, y: pos.y, z: pos.z});
-                                b.setAttribute('position', {x: pos.x + 0.4, y: pos.y, z: pos.z});
-                            }
-                        }
-                    }
-                }
-            }
-        }, 200);
+      // Simple Enemy Spawner
+      AFRAME.registerComponent('enemy-manager', {
+        init: function() {
+          setInterval(() => {
+            let enemy = document.createElement('a-box');
+            enemy.setAttribute('class', 'enemy');
+            enemy.setAttribute('color', '#FF4444');
+            let x = (Math.random() - 0.5) * 20;
+            let z = (Math.random() - 0.5) * 20 - 10;
+            enemy.setAttribute('position', `${x} 1.5 ${z}`);
+            enemy.setAttribute('animation', 'property: rotation; to: 0 360 0; loop: true; dur: 2000');
+            this.el.appendChild(enemy);
+          }, 3000);
+        }
+      });
     </script>
-</head>
-<body>
+  </head>
+  <body>
+    <a-scene enemy-manager>
+      <a-assets>
+        <a-sphere id="explosion-template" radius="0.5" color="orange" visible="false" animation="property: scale; to: 2 2 2; dur: 500"></a-sphere>
+      </a-assets>
 
-    <a-scene renderer="antialias: true">
-        <a-assets>
-            <a-mixin id="element-mixin" 
-                     geometry="primitive: box; width: 0.35; height: 0.35; depth: 0.08"
-                     hoverable grabbable class="clickable item"
-                     animation="property: scale; from: 0 0 0; to: 1 1 1; dur: 400; easing: easeOutBack"></a-mixin>
-            <a-mixin id="btn" geometry="primitive: plane; width: 0.5; height: 0.12" material="color: #222" class="clickable"></a-mixin>
-        </a-assets>
+      <a-entity environment="preset: arches; dressingAmount: 50; dressingColor: #555; groundColor: #222"></a-entity>
 
-        <a-entity environment="preset: starry; ground: flat; groundColor: #050505; grid: dots"></a-entity>
+      <a-entity id="rig" position="0 0 5">
+        <a-camera shooter>
+          <a-light id="muzzle-flash" type="point" color="yellow" intensity="2" distance="2" position="0 0 -0.5" visible="false"></a-light>
+          <a-cursor color="cyan"></a-cursor>
+        </a-camera>
+        
+        <a-entity laser-controls="hand: right" shooter></a-entity>
+      </a-entity>
 
-        <a-entity id="rig" movement-controls="speed: 0.15">
-            <a-entity camera position="0 1.6 0" look-controls>
-                <a-cursor raycaster="objects: .clickable" color="white"></a-cursor>
-            </a-entity>
-            
-            <a-entity id="leftHand" vr-controls super-hands hand-controls="hand: left" oculus-touch-controls="hand: left">
-                <a-entity id="menu" visible="false" position="0.15 0.1 0" rotation="-90 0 0">
-                    <a-plane width="0.7" height="1.1" color="#111" opacity="0.9">
-                        <a-text value="GOD MODS (X/Y)" align="center" position="0 0.45 0.01" width="3"></a-text>
-                        <a-text id="grav-label" value="Gravity: OFF" align="center" position="0 0.35 0.01" width="2" color="cyan"></a-text>
-                        
-                        <a-entity position="0 0.1 0.01" mixin="btn" onclick="createNew('Galaxy', '#311b92', {x:0, y:2, z:-1})">
-                            <a-text value="Cheat: Galaxy" align="center" width="2"></a-text>
-                        </a-entity>
-                        <a-entity position="0 -0.1 0.01" mixin="btn" onclick="createNew('Sun', '#fbc02d', {x:0, y:2, z:-1})">
-                            <a-text value="Cheat: Sun" align="center" width="2"></a-text>
-                        </a-entity>
-                        <a-entity position="0 -0.35 0.01" mixin="btn" onclick="location.reload()">
-                            <a-text value="Reset World" align="center" width="2" color="red"></a-text>
-                        </a-entity>
-                    </a-plane>
-                </a-entity>
-            </a-entity>
-            
-            <a-entity id="rightHand" super-hands hand-controls="hand: right" oculus-touch-controls="hand: right"></a-entity>
-        </a-entity>
-
-        <a-entity id="world">
-            <a-entity mixin="element-mixin" position="-0.5 1.5 -1" material="color: #ff4444" data-name="Fire"><a-text value="Fire" align="center" position="0 0 0.06" width="2"></a-text></a-entity>
-            <a-entity mixin="element-mixin" position="0.5 1.5 -1" material="color: #4444ff" data-name="Water"><a-text value="Water" align="center" position="0 0 0.06" width="2"></a-text></a-entity>
-            <a-entity mixin="element-mixin" position="-0.5 2.0 -1" material="color: #795548" data-name="Earth"><a-text value="Earth" align="center" position="0 0 0.06" width="2"></a-text></a-entity>
-            <a-entity mixin="element-mixin" position="0.5 2.0 -1" material="color: #ffffff" data-name="Wind"><a-text value="Wind" align="center" position="0 0 0.06" width="2" color="black"></a-text></a-entity>
-        </a-entity>
-
+      <a-plane position="0 0 0" rotation="-90 0 0" width="100" height="100" color="#111" opacity="0.5"></a-plane>
     </a-scene>
-</body>
+  </body>
 </html>
