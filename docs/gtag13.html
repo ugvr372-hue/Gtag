@@ -1,117 +1,142 @@
 <!DOCTYPE html>
 <html>
   <head>
-    <title>DINOVR:vr tengeram</title>
+    <title>Vr Tengem : DinoVR</title>
     <script src="https://aframe.io/releases/1.4.2/aframe.min.js"></script>
     <script src="https://cdn.jsdelivr.net/gh/donmccurdy/aframe-extras@v7.0.0/dist/aframe-extras.min.js"></script>
   </head>
   <body style="background: #000;">
-    <a-scene webxr="requiredFeatures: local-floor" fog="type: exponential; color: #000; density: 0.15">
+    <a-scene webxr="requiredFeatures: local-floor">
       
-      <a-plane rotation="-90 0 0" width="100" height="100" color="#111"></a-plane>
-      <a-sky color="black"></a-sky>
+      <a-entity id="hub-zone">
+          <a-sky color="#333"></a-sky>
+          <a-plane rotation="-90 0 0" width="20" height="20" color="#222"></a-plane>
+          
+          <a-text value="DINOVR DIMENSIONS" align="center" position="0 3 -4" scale="1 1 1" color="cyan"></a-text>
 
-      <a-entity id="huggy" position="0 0 -15" visible="false">
-          <a-box width="0.1" height="3" depth="0.1" position="0.2 1.5 0" color="#0033cc"></a-box>
-          <a-box width="0.1" height="3" depth="0.1" position="-0.2 1.5 0" color="#0033cc"></a-box>
-          <a-box width="0.5" height="1.5" depth="0.3" position="0 3.5 0" color="#0033cc">
-              <a-sphere color="white" radius="0.1" position="-0.15 0.4 0.3"></a-sphere>
-              <a-sphere color="white" radius="0.1" position="0.15 0.4 0.3"></a-sphere>
-              <a-box width="0.4" height="0.1" color="red" position="0 0 0.31"></a-box>
+          <a-box id="portal-sandbox" class="clickable" position="-3 1.5 -3" width="1.5" height="2.5" depth="0.2" color="lime">
+              <a-text value="SANDBOX" align="center" position="0 0 0.15" scale="0.3 0.3 0.3"></a-text>
           </a-box>
+
+          <a-box id="portal-horror" class="clickable" position="0 1.5 -3" width="1.5" height="2.5" depth="0.2" color="red">
+              <a-text value="HORROR" align="center" position="0 0 0.15" scale="0.3 0.3 0.3"></a-text>
+          </a-box>
+
+          <a-box id="portal-tycoon" class="clickable" position="3 1.5 -3" width="1.5" height="2.5" depth="0.2" color="gold">
+              <a-text value="TYCOON" align="center" position="0 0 0.15" scale="0.3 0.3 0.3"></a-text>
+          </a-box>
+      </a-entity>
+
+      <a-entity id="sandbox-zone" visible="false">
+          <a-sky color="skyblue"></a-sky>
+          <a-plane rotation="-90 0 0" width="100" height="100" color="green"></a-plane>
+          <a-box position="0 10 0" width="1" height="1" depth="1" color="white" animation="property: rotation; to: 0 360 0; loop: true; dur: 5000"></a-box>
+      </a-entity>
+
+      <a-entity id="horror-zone" visible="false">
+          <a-sky color="black"></a-sky>
+          <a-entity light="type: ambient; intensity: 0.1"></a-entity>
+          <a-plane rotation="-90 0 0" width="100" height="100" color="#050505"></a-plane>
+          <a-entity id="huggy" position="0 0 -15" visible="false">
+              <a-box width="0.4" height="4" depth="0.4" color="#0033cc"></a-box>
+              <a-box width="0.6" height="0.6" depth="0.6" position="0 2.2 0" color="#0033cc">
+                  <a-plane color="red" position="0 -0.1 0.31" width="0.4" height="0.1"></a-plane>
+              </a-box>
+          </a-entity>
       </a-entity>
 
       <a-entity id="rig" movement-controls="speed: 0.15; fly: false">
         <a-entity camera position="0 1.6 0" look-controls>
-            <a-light type="spot" intensity="1" distance="15"></a-light>
-            <a-cursor fuse="false" raycaster="objects: .menu-btn"></a-cursor>
-        </a-entity>
-
-        <a-entity id="leftHand" oculus-touch-controls="hand: left" menu-controller>
-            <a-entity id="gtag-menu" visible="false" position="0.1 0.1 -0.1" rotation="-45 0 0">
-                <a-plane width="0.25" height="0.4" color="#222">
-                    <a-text value="DINOVR v1.0" align="center" position="0 0.15 0.01" scale="0.12 0.12 0.12" color="yellow"></a-text>
-                    
-                    <a-plane id="btn-god" class="menu-btn" width="0.2" height="0.05" position="0 0.05 0.01" color="#444">
-                        <a-text id="txt-god" value="GOD MODE: OFF" align="center" scale="0.08 0.08 0.08"></a-text>
-                    </a-plane>
-
-                    <a-plane id="btn-fly" class="menu-btn" width="0.2" height="0.05" position="0 -0.02 0.01" color="#444">
-                        <a-text id="txt-fly" value="FLY: OFF" align="center" scale="0.08 0.08 0.08"></a-text>
-                    </a-plane>
-
-                    <a-plane id="btn-kill" class="menu-btn" width="0.2" height="0.05" position="0 -0.09 0.01" color="#444">
-                        <a-text value="FREEZE HUGGY" align="center" scale="0.08 0.08 0.08"></a-text>
-                    </a-plane>
+            <a-cursor fuse="false" raycaster="objects: .clickable, .menu-btn"></a-cursor>
+            
+            <a-entity id="mod-menu" visible="false" position="0 0 -0.4">
+                <a-plane width="0.3" height="0.4" color="#111" opacity="0.9">
+                    <a-text id="menu-title" value="DINOVR MENU" align="center" position="0 0.15 0.01" scale="0.1 0.1 0.1" color="yellow"></a-text>
+                    <a-entity id="menu-content"></a-entity>
                 </a-plane>
             </a-entity>
         </a-entity>
 
-        <a-entity id="rightHand" oculus-touch-controls="hand: right" grabpack-logic>
-            <a-entity id="grab-hand" position="0 0 -0.1">
-                <a-box width="0.1" height="0.1" depth="0.05" color="red"></a-box>
-            </a-entity>
-        </a-entity>
+        <a-entity id="leftHand" oculus-touch-controls="hand: left" controller-logic></a-entity>
+        <a-entity id="rightHand" oculus-touch-controls="hand: right"></a-entity>
       </a-entity>
 
     </a-scene>
 
     <script>
-      let mods = { god: false, fly: false, freeze: false };
-      let huggyStarted = false;
+      let currentZone = "hub";
+      const rig = document.querySelector('#rig');
+      const menu = document.querySelector('#mod-menu');
+      const menuContent = document.querySelector('#menu-content');
+      
+      // --- PORTAL LOGIC ---
+      function switchZone(zone) {
+          document.querySelector('#hub-zone').setAttribute('visible', zone === 'hub');
+          document.querySelector('#sandbox-zone').setAttribute('visible', zone === 'sandbox');
+          document.querySelector('#horror-zone').setAttribute('visible', zone === 'horror');
+          currentZone = zone;
+          rig.object3D.position.set(0, 0, 0); // Reset position
+          menu.setAttribute('visible', false);
+      }
+
+      document.querySelector('#portal-sandbox').addEventListener('click', () => switchZone('sandbox'));
+      document.querySelector('#portal-horror').addEventListener('click', () => {
+          switchZone('horror');
+          document.querySelector('#huggy').setAttribute('visible', true);
+      });
+      document.querySelector('#portal-tycoon').addEventListener('click', () => alert("Tycoon coming in next patch!"));
 
       // --- MENU LOGIC ---
-      AFRAME.registerComponent('menu-controller', {
+      AFRAME.registerComponent('controller-logic', {
           init: function() {
-              const menu = document.querySelector('#gtag-menu');
-              this.el.addEventListener('xbuttondown', () => menu.setAttribute('visible', !menu.getAttribute('visible')));
-              
-              // Button Clicks
-              document.querySelector('#btn-god').addEventListener('click', () => {
-                  mods.god = !mods.god;
-                  document.querySelector('#txt-god').setAttribute('value', mods.god ? "GOD MODE: ON" : "GOD MODE: OFF");
-                  document.querySelector('#btn-god').setAttribute('color', mods.god ? "green" : "#444");
-              });
-
-              document.querySelector('#btn-fly').addEventListener('click', () => {
-                  mods.fly = !mods.fly;
-                  document.querySelector('#txt-fly').setAttribute('value', mods.fly ? "FLY: ON" : "FLY: OFF");
-                  document.querySelector('#btn-fly').setAttribute('color', mods.fly ? "green" : "#444");
-                  document.querySelector('#rig').setAttribute('movement-controls', `fly: ${mods.fly}`);
-              });
-
-              document.querySelector('#btn-kill').addEventListener('click', () => {
-                  mods.freeze = !mods.freeze;
-                  document.querySelector('#btn-kill').setAttribute('color', mods.freeze ? "green" : "#444");
+              this.el.addEventListener('xbuttondown', () => {
+                  menu.setAttribute('visible', !menu.getAttribute('visible'));
+                  updateMenu();
               });
           }
       });
 
-      // --- GRABPACK ---
-      AFRAME.registerComponent('grabpack-logic', {
-          init: function() {
-              const hand = document.querySelector('#grab-hand');
-              this.el.addEventListener('triggerdown', () => {
-                  hand.setAttribute('animation', 'property: position; to: 0 0 -10; dur: 300; dir: alternate; loop: 1');
-                  if(!huggyStarted) {
-                      huggyStarted = true;
-                      document.querySelector('#huggy').setAttribute('visible', 'true');
-                  }
+      function updateMenu() {
+          menuContent.innerHTML = ""; // Clear
+          if (currentZone === "sandbox") {
+              document.querySelector('#menu-title').setAttribute('value', "SANDBOX SPAWNER");
+              createMenuButton("SPAWN CUBE", "0 0.05 0.01", () => spawnObj('a-box'));
+              createMenuButton("SPAWN BALL", "0 -0.05 0.01", () => spawnObj('a-sphere'));
+          } else if (currentZone === "horror") {
+              document.querySelector('#menu-title').setAttribute('value', "HORROR MODS");
+              createMenuButton("GOD MODE", "0 0.05 0.01", () => alert("God Mode On"));
+              createMenuButton("FLY MOD", "0 -0.05 0.01", () => {
+                  let f = rig.getAttribute('movement-controls').fly;
+                  rig.setAttribute('movement-controls', `fly: ${!f}`);
               });
           }
-      });
+      }
+
+      function createMenuButton(text, pos, callback) {
+          const btn = document.createElement('a-plane');
+          btn.setAttribute('class', 'menu-btn');
+          btn.setAttribute('width', '0.2');
+          btn.setAttribute('height', '0.06');
+          btn.setAttribute('position', pos);
+          btn.setAttribute('color', '#333');
+          btn.innerHTML = `<a-text value="${text}" align="center" scale="0.08 0.08 0.08"></a-text>`;
+          btn.addEventListener('click', callback);
+          menuContent.appendChild(btn);
+      }
+
+      function spawnObj(type) {
+          const obj = document.createElement(type);
+          obj.setAttribute('position', '0 1 -2');
+          obj.setAttribute('color', 'orange');
+          document.querySelector('#sandbox-zone').appendChild(obj);
+      }
 
       // --- HUGGY AI ---
       setInterval(() => {
-          if(!huggyStarted || mods.freeze) return;
+          if(currentZone !== "horror") return;
           const h = document.querySelector('#huggy');
-          const r = document.querySelector('#rig');
-          h.object3D.lookAt(r.object3D.position.x, 0, r.object3D.position.z);
-          h.object3D.translateZ(0.08);
-
-          if(!mods.god && h.object3D.position.distanceTo(r.object3D.position) < 1.5) {
-              location.reload();
-          }
+          h.object3D.lookAt(rig.object3D.position.x, 0, rig.object3D.position.z);
+          h.object3D.translateZ(0.06);
       }, 20);
     </script>
   </body>
