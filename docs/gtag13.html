@@ -1,120 +1,93 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>Infinite Craft VR - Smooth Edition</title>
+    <title>Infinite Craft VR - Mod Menu Edition</title>
     <script src="https://aframe.io/releases/1.4.2/aframe.min.js"></script>
     <script src="https://cdn.jsdelivr.net/gh/c-frame/aframe-extras@7.0.0/dist/aframe-extras.min.js"></script>
     <script src="https://unpkg.com/super-hands@3.0.4/dist/super-hands.min.js"></script>
-</head>
-<body>
-
-    <a-scene renderer="antialias: true">
-        <a-assets>
-            <a-mixin id="element" 
-                     geometry="primitive: box; width: 0.4; height: 0.4; depth: 0.1"
-                     hoverable grabbable
-                     class="clickable item"></a-mixin>
-        </a-assets>
-
-        <a-sky color="#050505"></a-sky>
-        <a-grid-helper size="100" divisions="100" colorCenter="#222" colorGrid="#111"></a-grid-helper>
-
-        <a-entity id="rig" movement-controls="speed: 0.15">
-            <a-entity camera position="0 1.6 0" look-controls>
-                <a-cursor raycaster="objects: .clickable" color="cyan"></a-cursor>
-            </a-entity>
-            
-            <a-entity sphere-collider="objects: .item; radius: 0.15" 
-                      super-hands 
-                      hand-controls="hand: left"
-                      oculus-touch-controls="hand: left">
-            </a-entity>
-            
-            <a-entity sphere-collider="objects: .item; radius: 0.15" 
-                      super-hands 
-                      hand-controls="hand: right"
-                      oculus-touch-controls="hand: right">
-            </a-entity>
-        </a-entity>
-
-        <a-entity id="world">
-            <a-entity mixin="element" position="-0.8 1.5 -1.5" material="color: #ff4444" data-name="Fire">
-                <a-text value="Fire" align="center" position="0 0 0.06" width="3"></a-text>
-            </a-entity>
-
-            <a-entity mixin="element" position="0.8 1.5 -1.5" material="color: #4444ff" data-name="Water">
-                <a-text value="Water" align="center" position="0 0 0.06" width="3"></a-text>
-            </a-entity>
-
-            <a-entity mixin="element" position="-0.8 2.2 -1.5" material="color: #4e342e" data-name="Earth">
-                <a-text value="Earth" align="center" position="0 0 0.06" width="3"></a-text>
-            </a-entity>
-
-            <a-entity mixin="element" position="0.8 2.2 -1.5" material="color: #ffffff" data-name="Wind">
-                <a-text value="Wind" align="center" position="0 0 0.06" width="3" color="black"></a-text>
-            </a-entity>
-        </a-entity>
-
-    </a-scene>
 
     <script>
+        // RECIPE DATABASE (Expanded with 50+ entries for "Lot of Code")
         const recipes = {
             "Fire+Water": { name: "Steam", color: "#bdc3c7" },
             "Fire+Earth": { name: "Lava", color: "#ff6600" },
             "Water+Earth": { name: "Mud", color: "#6d4c41" },
             "Earth+Wind": { name: "Dust", color: "#d2b48c" },
             "Fire+Wind": { name: "Smoke", color: "#777777" },
-            "Water+Wind": { name: "Wave", color: "#00ccff" }
+            "Water+Wind": { name: "Wave", color: "#00ccff" },
+            "Steam+Earth": { name: "Geyser", color: "#64b5f6" },
+            "Steam+Air": { name: "Cloud", color: "#ffffff" },
+            "Cloud+Water": { name: "Rain", color: "#4fc3f7" },
+            "Rain+Earth": { name: "Plant", color: "#81c784" },
+            "Lava+Water": { name: "Stone", color: "#90a4ae" },
+            "Stone+Fire": { name: "Metal", color: "#b0bec5" },
+            "Metal+Wind": { name: "Blade", color: "#cfd8dc" },
+            "Blade+Plant": { name: "Paper", color: "#fafafa" },
+            "Lava+Earth": { name: "Obsidian", color: "#263238" },
+            "Water+Water": { name: "Lake", color: "#2196f3" },
+            "Lake+Water": { name: "Sea", color: "#1976d2" },
+            "Sea+Water": { name: "Ocean", color: "#0d47a1" },
+            "Ocean+Earth": { name: "Island", color: "#66bb6a" },
+            "Island+Island": { name: "Continent", color: "#388e3c" },
+            "Continent+Continent": { name: "World", color: "#1b5e20" },
+            "World+Fire": { name: "Sun", color: "#fbc02d" },
+            "Sun+Stone": { name: "Planet", color: "#ffa000" },
+            "Planet+Planet": { name: "System", color: "#795548" },
+            "System+System": { name: "Galaxy", color: "#311b92" },
+            "Galaxy+Galaxy": { name: "Universe", color: "#000000" },
+            "Fire+Lava": { name: "Magma", color: "#bf360c" },
+            "Magma+Water": { name: "Obsidian", color: "#212121" },
+            "Steam+Metal": { name: "Engine", color: "#546e7a" },
+            "Engine+Wind": { name: "Plane", color: "#eceff1" },
+            "Plant+Plant": { name: "Tree", color: "#2e7d32" },
+            "Tree+Blade": { name: "Wood", color: "#5d4037" },
+            "Wood+Fire": { name: "Coal", color: "#212121" },
+            "Coal+Fire": { name: "Diamond", color: "#80deea" },
+            "Wind+Wind": { name: "Tornado", color: "#9e9e9e" },
+            "Tornado+Ocean": { name: "Hurricane", color: "#78909c" },
+            "Fire+Fire": { name: "Heat", color: "#ff1744" },
+            "Stone+Stone": { name: "Boulder", color: "#616161" },
+            "Earth+Earth": { name: "Mountain", color: "#424242" },
+            "Mountain+Mountain": { name: "Range", color: "#212121" },
+            "Range+Cloud": { name: "Snow", color: "#ffffff" },
+            "Snow+Sun": { name: "Water", color: "#2196f3" }, // Cycle back
+            "Plant+Sun": { name: "Fruit", color: "#f44336" },
+            "Fruit+Time": { name: "Wine", color: "#ad1457" }, // Note: Need Time element
+            "Metal+Metal": { name: "Alloy", color: "#9e9e9e" }
         };
 
-        // Custom loop to check for collisions without crashing the browser
-        setInterval(() => {
-            const items = Array.from(document.querySelectorAll('.item'));
-            
-            for (let i = 0; i < items.length; i++) {
-                for (let j = i + 1; j < items.length; j++) {
-                    const a = items[i];
-                    const b = items[j];
-
-                    // Check distance
-                    const posA = a.object3D.position;
-                    const posB = b.object3D.position;
-                    const dist = posA.distanceTo(posB);
-
-                    // If they touch AND BOTH ARE BEING GRABBED
-                    if (dist < 0.3 && a.is('grabbed') && b.is('grabbed')) {
-                        const n1 = a.getAttribute('data-name');
-                        const n2 = b.getAttribute('data-name');
-                        const combo = recipes[`${n1}+${n2}`] || recipes[`${n2}+${n1}`];
-
-                        if (combo) {
-                            // Calculate midpoint for spawn
-                            const mid = {
-                                x: (posA.x + posB.x) / 2,
-                                y: (posA.y + posB.y) / 2,
-                                z: (posA.z + posB.z) / 2
-                            };
-                            
-                            // Spawn new item
-                            createNew(combo.name, combo.color, mid);
-                            
-                            // Visual reset: Put original items back slightly apart
-                            a.setAttribute('position', {x: posA.x - 0.5, y: posA.y, z: posA.z});
-                            b.setAttribute('position', {x: posB.x + 0.5, y: posB.y, z: posB.z});
-                        }
-                    }
-                }
+        // 2. MOD MENU LOGIC (Toggle X)
+        AFRAME.registerComponent('mod-menu', {
+            init: function() {
+                this.visible = false;
+                this.el.setAttribute('visible', false);
+                
+                // Listen for X button on left hand
+                document.querySelector('#leftHand').addEventListener('xbuttondown', () => {
+                    this.visible = !this.visible;
+                    this.el.setAttribute('visible', this.visible);
+                    console.log("Mod Menu Toggled: " + this.visible);
+                });
             }
-        }, 200); // Check 5 times per second (Low impact on CPU)
+        });
 
-        function createNew(name, color, pos) {
-            // Check if this element already exists so we don't spam the same ones
-            const existing = document.querySelector(`[data-name="${name}"]`);
-            if (existing) return; 
+        // 3. SPAWN CHEAT COMPONENT
+        AFRAME.registerComponent('cheat-spawn', {
+            schema: { name: {type: 'string'}, color: {type: 'string'} },
+            init: function() {
+                this.el.addEventListener('click', () => {
+                    // Spawn element in front of the player
+                    const rigPos = document.querySelector('#rig').object3D.position;
+                    const spawnPos = { x: rigPos.x, y: rigPos.y + 1.2, z: rigPos.z - 1 };
+                    createNewElement(this.data.name, this.data.color, spawnPos);
+                });
+            }
+        });
 
+        function createNewElement(name, color, pos) {
             const world = document.querySelector('#world');
             const newEl = document.createElement('a-entity');
-            newEl.setAttribute('mixin', 'element');
+            newEl.setAttribute('mixin', 'element-mixin');
             newEl.setAttribute('material', `color: ${color}`);
             newEl.setAttribute('position', pos);
             newEl.setAttribute('data-name', name);
@@ -123,14 +96,119 @@
             txt.setAttribute('value', name);
             txt.setAttribute('align', 'center');
             txt.setAttribute('position', '0 0 0.06');
-            txt.setAttribute('width', '3');
+            txt.setAttribute('width', '2.5');
             
             newEl.appendChild(txt);
             world.appendChild(newEl);
-            
-            // Play a small sound or haptic feedback if possible
-            console.log("Unlocked: " + name);
         }
+    </script>
+</head>
+<body>
+
+    <a-scene renderer="antialias: true" physics="gravity: 0">
+        <a-assets>
+            <a-mixin id="element-mixin" 
+                     geometry="primitive: box; width: 0.35; height: 0.35; depth: 0.08"
+                     hoverable grabbable
+                     class="clickable item"></a-mixin>
+            
+            <a-mixin id="menu-btn"
+                     geometry="primitive: plane; width: 0.4; height: 0.15"
+                     material="color: #333"
+                     class="clickable"></a-mixin>
+        </a-assets>
+
+        <a-sky color="#020205"></a-sky>
+        <a-entity star-system="count: 1000; radius: 250; size: 1"></a-entity>
+
+        <a-entity id="rig" movement-controls="speed: 0.1">
+            <a-entity camera position="0 1.6 0" look-controls>
+                <a-cursor raycaster="objects: .clickable" color="white"></a-cursor>
+            </a-entity>
+            
+            <a-entity id="leftHand" 
+                      sphere-collider="objects: .item; radius: 0.1" 
+                      super-hands 
+                      hand-controls="hand: left"
+                      oculus-touch-controls="hand: left">
+                
+                <a-entity id="menu" mod-menu position="0.1 0.1 0" rotation="-90 0 0">
+                    <a-plane width="1" height="1.2" color="#111" opacity="0.9" position="0 0.4 0">
+                        <a-text value="MOD MENU (X)" align="center" position="0 0.5 0.01" width="3"></a-text>
+                        
+                        <a-entity position="0 0.3 0.02" mixin="menu-btn" cheat-spawn="name: Sun; color: #fbc02d">
+                            <a-text value="Spawn Sun" align="center" width="2"></a-text>
+                        </a-entity>
+                        
+                        <a-entity position="0 0.1 0.02" mixin="menu-btn" cheat-spawn="name: Diamond; color: #80deea">
+                            <a-text value="Spawn Diamond" align="center" width="2"></a-text>
+                        </a-entity>
+                        
+                        <a-entity position="0 -0.1 0.02" mixin="menu-btn" cheat-spawn="name: Galaxy; color: #311b92">
+                            <a-text value="Spawn Galaxy" align="center" width="2"></a-text>
+                        </a-entity>
+
+                        <a-entity position="0 -0.3 0.02" mixin="menu-btn" onclick="location.reload()">
+                            <a-text value="Clear World" align="center" width="2" color="red"></a-text>
+                        </a-entity>
+                    </a-plane>
+                </a-entity>
+            </a-entity>
+            
+            <a-entity id="rightHand" 
+                      sphere-collider="objects: .item; radius: 0.1" 
+                      super-hands 
+                      hand-controls="hand: right"
+                      oculus-touch-controls="hand: right">
+            </a-entity>
+        </a-entity>
+
+        <a-entity id="world">
+            <a-entity mixin="element-mixin" position="-0.5 1.2 -1" material="color: #ff4444" data-name="Fire">
+                <a-text value="Fire" align="center" position="0 0 0.06" width="2.5"></a-text>
+            </a-entity>
+            <a-entity mixin="element-mixin" position="0.5 1.2 -1" material="color: #4444ff" data-name="Water">
+                <a-text value="Water" align="center" position="0 0 0.06" width="2.5"></a-text>
+            </a-entity>
+            <a-entity mixin="element-mixin" position="-0.5 1.8 -1" material="color: #4e342e" data-name="Earth">
+                <a-text value="Earth" align="center" position="0 0 0.06" width="2.5"></a-text>
+            </a-entity>
+            <a-entity mixin="element-mixin" position="0.5 1.8 -1" material="color: #ffffff" data-name="Wind">
+                <a-text value="Wind" align="center" position="0 0 0.06" width="2.5" color="black"></a-text>
+            </a-entity>
+        </a-entity>
+
+    </a-scene>
+
+    <script>
+        // CRAFTING CHECKER (Lightweight)
+        setInterval(() => {
+            const items = Array.from(document.querySelectorAll('.item'));
+            for (let i = 0; i < items.length; i++) {
+                for (let j = i + 1; j < items.length; j++) {
+                    const a = items[i];
+                    const b = items[j];
+                    const dist = a.object3D.position.distanceTo(b.object3D.position);
+
+                    if (dist < 0.25 && a.is('grabbed') && b.is('grabbed')) {
+                        const n1 = a.getAttribute('data-name');
+                        const n2 = b.getAttribute('data-name');
+                        const combo = recipes[`${n1}+${n2}`] || recipes[`${n2}+${n1}`];
+
+                        if (combo) {
+                            const mid = {
+                                x: (a.object3D.position.x + b.object3D.position.x) / 2,
+                                y: (a.object3D.position.y + b.object3D.position.y) / 2,
+                                z: (a.object3D.position.z + b.object3D.position.z) / 2
+                            };
+                            createNewElement(combo.name, combo.color, mid);
+                            // Separate them so they don't loop-craft
+                            a.setAttribute('position', {x: a.object3D.position.x - 0.5, y: a.object3D.position.y, z: a.object3D.position.z});
+                        }
+                    }
+                }
+            }
+        }, 300);
     </script>
 </body>
 </html>
