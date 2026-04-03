@@ -1,143 +1,92 @@
 <!DOCTYPE html>
 <html>
-  <head>
-    <title>Vr Tengem : DinoVR</title>
-    <script src="https://aframe.io/releases/1.4.2/aframe.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/gh/donmccurdy/aframe-extras@v7.0.0/dist/aframe-extras.min.js"></script>
-  </head>
-  <body style="background: #000;">
-    <a-scene webxr="requiredFeatures: local-floor">
-      
-      <a-entity id="hub-zone">
-          <a-sky color="#333"></a-sky>
-          <a-plane rotation="-90 0 0" width="20" height="20" color="#222"></a-plane>
-          
-          <a-text value="DINOVR DIMENSIONS" align="center" position="0 3 -4" scale="1 1 1" color="cyan"></a-text>
+<head>
+    <title>Gemini VR Fun House</title>
+    <script src="https://aframe.io/releases/1.4.0/aframe.min.js"></script>
+    <script src="https://unpkg.com/aframe-environment-component@1.3.2/dist/aframe-environment-component.min.js"></script>
+</head>
+<body>
 
-          <a-box id="portal-sandbox" class="clickable" position="-3 1.5 -3" width="1.5" height="2.5" depth="0.2" color="lime">
-              <a-text value="SANDBOX" align="center" position="0 0 0.15" scale="0.3 0.3 0.3"></a-text>
-          </a-box>
+    <a-scene xr-mode-ui="enabled: true">
+        <a-assets>
+            <img id="moneyTex" src="https://img.icons8.com/color/480/money-bag.png">
+        </a-assets>
 
-          <a-box id="portal-horror" class="clickable" position="0 1.5 -3" width="1.5" height="2.5" depth="0.2" color="red">
-              <a-text value="HORROR" align="center" position="0 0 0.15" scale="0.3 0.3 0.3"></a-text>
-          </a-box>
+        <a-entity environment="preset: forest; dressingAmount: 50"></a-entity>
 
-          <a-box id="portal-tycoon" class="clickable" position="3 1.5 -3" width="1.5" height="2.5" depth="0.2" color="gold">
-              <a-text value="TYCOON" align="center" position="0 0 0.15" scale="0.3 0.3 0.3"></a-text>
-          </a-box>
-      </a-entity>
+        <a-entity id="rig" position="0 0 4">
+            <a-camera>
+                <a-cursor color="#FF0000"></a-cursor>
+            </a-camera>
+            <a-entity oculus-touch-controls="hand: left"></a-entity>
+            <a-entity oculus-touch-controls="hand: right"></a-entity>
+        </a-entity>
 
-      <a-entity id="sandbox-zone" visible="false">
-          <a-sky color="skyblue"></a-sky>
-          <a-plane rotation="-90 0 0" width="100" height="100" color="green"></a-plane>
-          <a-box position="0 10 0" width="1" height="1" depth="1" color="white" animation="property: rotation; to: 0 360 0; loop: true; dur: 5000"></a-box>
-      </a-entity>
+        <a-entity id="game-ui" position="0 2 0">
+            <a-plane color="#2ecc71" width="4" height="1" position="0 1 -2">
+                <a-text id="balance" value="Balance: $1,000,000" align="center" color="#FFF" width="10"></a-text>
+            </a-plane>
 
-      <a-entity id="horror-zone" visible="false">
-          <a-sky color="black"></a-sky>
-          <a-entity light="type: ambient; intensity: 0.1"></a-entity>
-          <a-plane rotation="-90 0 0" width="100" height="100" color="#050505"></a-plane>
-          <a-entity id="huggy" position="0 0 -15" visible="false">
-              <a-box width="0.4" height="4" depth="0.4" color="#0033cc"></a-box>
-              <a-box width="0.6" height="0.6" depth="0.6" position="0 2.2 0" color="#0033cc">
-                  <a-plane color="red" position="0 -0.1 0.31" width="0.4" height="0.1"></a-plane>
-              </a-box>
-          </a-entity>
-      </a-entity>
+            <a-entity position="-1.5 0 -2" class="clickable" onclick="buy(5, 'Burger')">
+                <a-box color="#f1c40f" depth="0.5" height="0.5" width="0.5">
+                    <a-animation attribute="rotation" dur="3000" to="0 360 0" repeat="indefinite"></a-animation>
+                </a-box>
+                <a-text value="Burger ($5)" align="center" position="0 -0.6 0" width="3"></a-text>
+            </a-entity>
 
-      <a-entity id="rig" movement-controls="speed: 0.15; fly: false">
-        <a-entity camera position="0 1.6 0" look-controls>
-            <a-cursor fuse="false" raycaster="objects: .clickable, .menu-btn"></a-cursor>
-            
-            <a-entity id="mod-menu" visible="false" position="0 0 -0.4">
-                <a-plane width="0.3" height="0.4" color="#111" opacity="0.9">
-                    <a-text id="menu-title" value="DINOVR MENU" align="center" position="0 0.15 0.01" scale="0.1 0.1 0.1" color="yellow"></a-text>
-                    <a-entity id="menu-content"></a-entity>
-                </a-plane>
+            <a-entity position="0 0 -2" class="clickable" onclick="buy(50000, 'Gold Bar')">
+                <a-box color="#FFD700" depth="0.8" height="0.2" width="0.4"></a-box>
+                <a-text value="Gold ($50k)" align="center" position="0 -0.6 0" width="3"></a-text>
+            </a-entity>
+
+            <a-entity position="1.5 0 -2" class="clickable" onclick="buy(1000000, 'Rocket')">
+                <a-cylinder color="#e74c3c" radius="0.2" height="1"></a-cylinder>
+                <a-text value="Rocket ($1M)" align="center" position="0 -0.6 0" width="3"></a-text>
             </a-entity>
         </a-entity>
 
-        <a-entity id="leftHand" oculus-touch-controls="hand: left" controller-logic></a-entity>
-        <a-entity id="rightHand" oculus-touch-controls="hand: right"></a-entity>
-      </a-entity>
+        <a-entity id="ar-message" position="0 1 -1" visible="false">
+            <a-text value="You are in AR Mode!\nLook at your desk." align="center" color="black"></a-text>
+        </a-entity>
 
     </a-scene>
 
     <script>
-      let currentZone = "hub";
-      const rig = document.querySelector('#rig');
-      const menu = document.querySelector('#mod-menu');
-      const menuContent = document.querySelector('#menu-content');
-      
-      // --- PORTAL LOGIC ---
-      function switchZone(zone) {
-          document.querySelector('#hub-zone').setAttribute('visible', zone === 'hub');
-          document.querySelector('#sandbox-zone').setAttribute('visible', zone === 'sandbox');
-          document.querySelector('#horror-zone').setAttribute('visible', zone === 'horror');
-          currentZone = zone;
-          rig.object3D.position.set(0, 0, 0); // Reset position
-          menu.setAttribute('visible', false);
-      }
+        let balance = 1000000;
+        const balanceText = document.querySelector('#balance');
 
-      document.querySelector('#portal-sandbox').addEventListener('click', () => switchZone('sandbox'));
-      document.querySelector('#portal-horror').addEventListener('click', () => {
-          switchZone('horror');
-          document.querySelector('#huggy').setAttribute('visible', true);
-      });
-      document.querySelector('#portal-tycoon').addEventListener('click', () => alert("Tycoon coming in next patch!"));
+        function buy(price, name) {
+            if (balance >= price) {
+                balance -= price;
+                balanceText.setAttribute('value', 'Balance: $' + balance.toLocaleString());
+                
+                // Visual Feedback: Create a floating money icon
+                const scene = document.querySelector('a-scene');
+                const feedback = document.createElement('a-text');
+                feedback.setAttribute('value', '-' + name);
+                feedback.setAttribute('position', '0 2.5 -2');
+                feedback.setAttribute('color', 'red');
+                feedback.setAttribute('align', 'center');
+                scene.appendChild(feedback);
 
-      // --- MENU LOGIC ---
-      AFRAME.registerComponent('controller-logic', {
-          init: function() {
-              this.el.addEventListener('xbuttondown', () => {
-                  menu.setAttribute('visible', !menu.getAttribute('visible'));
-                  updateMenu();
-              });
-          }
-      });
+                // Make feedback float up and disappear
+                setTimeout(() => {
+                    scene.removeChild(feedback);
+                }, 1000);
+            } else {
+                balanceText.setAttribute('value', 'NOT ENOUGH CASH!');
+                setTimeout(() => {
+                    balanceText.setAttribute('value', 'Balance: $' + balance.toLocaleString());
+                }, 1000);
+            }
+        }
 
-      function updateMenu() {
-          menuContent.innerHTML = ""; // Clear
-          if (currentZone === "sandbox") {
-              document.querySelector('#menu-title').setAttribute('value', "SANDBOX SPAWNER");
-              createMenuButton("SPAWN CUBE", "0 0.05 0.01", () => spawnObj('a-box'));
-              createMenuButton("SPAWN BALL", "0 -0.05 0.01", () => spawnObj('a-sphere'));
-          } else if (currentZone === "horror") {
-              document.querySelector('#menu-title').setAttribute('value', "HORROR MODS");
-              createMenuButton("GOD MODE", "0 0.05 0.01", () => alert("God Mode On"));
-              createMenuButton("FLY MOD", "0 -0.05 0.01", () => {
-                  let f = rig.getAttribute('movement-controls').fly;
-                  rig.setAttribute('movement-controls', `fly: ${!f}`);
-              });
-          }
-      }
-
-      function createMenuButton(text, pos, callback) {
-          const btn = document.createElement('a-plane');
-          btn.setAttribute('class', 'menu-btn');
-          btn.setAttribute('width', '0.2');
-          btn.setAttribute('height', '0.06');
-          btn.setAttribute('position', pos);
-          btn.setAttribute('color', '#333');
-          btn.innerHTML = `<a-text value="${text}" align="center" scale="0.08 0.08 0.08"></a-text>`;
-          btn.addEventListener('click', callback);
-          menuContent.appendChild(btn);
-      }
-
-      function spawnObj(type) {
-          const obj = document.createElement(type);
-          obj.setAttribute('position', '0 1 -2');
-          obj.setAttribute('color', 'orange');
-          document.querySelector('#sandbox-zone').appendChild(obj);
-      }
-
-      // --- HUGGY AI ---
-      setInterval(() => {
-          if(currentZone !== "horror") return;
-          const h = document.querySelector('#huggy');
-          h.object3D.lookAt(rig.object3D.position.x, 0, rig.object3D.position.z);
-          h.object3D.translateZ(0.06);
-      }, 20);
+        // Detect AR Mode
+        document.querySelector('a-scene').addEventListener('enter-vr', function () {
+           if (this.is('ar-mode')) {
+               document.querySelector('#ar-message').setAttribute('visible', 'true');
+           }
+        });
     </script>
-  </body>
+</body>
 </html>
